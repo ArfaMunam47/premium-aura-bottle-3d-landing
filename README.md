@@ -2,7 +2,7 @@
 
 A premium-quality 3D landing page built with Vite and Three.js, designed to showcase a luxury bottle concept in a cinematic web presentation.
 
-![Website preview](./screenshot.svg)
+![Website preview](ss.png)
 
 ## Overview
 
