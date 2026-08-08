@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="aura" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4d9fff"/>
+      <stop offset="0.5" stop-color="#b06bff"/>
+      <stop offset="1" stop-color="#4dd9ff"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="#08090d"/>
+  <rect x="1" y="1" width="62" height="62" rx="14" fill="none" stroke="url(#aura)" stroke-width="1.5" opacity="0.6"/>
+  <path d="M32 9c2.6 5.5 11 13.5 11 23a11 11 0 1 1-22 0c0-9.5 8.4-17.5 11-23z" fill="url(#aura)"/>
+  <path d="M32 9c2.6 5.5 11 13.5 11 23a11 11 0 0 1-2.2 6.6c-.3-9.6-6.4-17.6-8.8-29.6z" fill="url(#shine)"/>
+  <circle cx="27" cy="38" r="2.6" fill="#ffffff" opacity="0.85"/>
+</svg>
