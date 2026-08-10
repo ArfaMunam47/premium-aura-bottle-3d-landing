@@ -27,16 +27,34 @@ export function initScene(canvas) {
     }
     console.log('✅ WebGL context test passed');
     
-    const renderer = new THREE.WebGLRenderer({ 
-      canvas, 
-      antialias: true, 
-      alpha: true, 
-      powerPreference: 'high-performance',
-      // Firefox-specific settings
-      stencil: false,
-      depth: true,
-      failIfMajorPerformanceCaveat: false
-    });
+    // Try multiple WebGL context configurations for Firefox compatibility
+    let renderer;
+    const configs = [
+      { antialias: true, alpha: true, stencil: false, depth: true },
+      { antialias: false, alpha: true, stencil: false, depth: true },
+      { antialias: true, alpha: false, stencil: false, depth: true },
+      { antialias: false, alpha: false, stencil: false, depth: true }
+    ];
+    
+    for (const config of configs) {
+      try {
+        renderer = new THREE.WebGLRenderer({ 
+          canvas, 
+          ...config,
+          powerPreference: 'high-performance',
+          failIfMajorPerformanceCaveat: false
+        });
+        console.log(`✅ WebGLRenderer created with config:`, config);
+        break;
+      } catch (e) {
+        console.warn(`⚠️ Failed with config ${JSON.stringify(config)}:`, e);
+        continue;
+      }
+    }
+    
+    if (!renderer) {
+      throw new Error('Failed to create WebGLRenderer with any configuration');
+    }
     
     console.log('✅ WebGLRenderer created');
     
@@ -46,6 +64,9 @@ export function initScene(canvas) {
     
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
+    // Set clear color for debugging
+    renderer.setClearColor(0x08090d, 1);
     
     // Firefox-compatible color space and tone mapping
     if (isWebGL2) {
@@ -111,27 +132,27 @@ export function initScene(canvas) {
     scene.add(bottomLight);
 
     // Environment map (Firefox-compatible)
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envScene = new THREE.Scene();
-    const envGeo = new THREE.SphereGeometry(20, 32, 32);
-    
-    // Use a simpler material for Firefox to avoid shader issues
-    const envMat = new THREE.MeshBasicMaterial({
-      side: THREE.BackSide,
-      color: 0x4d9fff
-    });
-    
-    const envMesh = new THREE.Mesh(envGeo, envMat);
-    envScene.add(envMesh);
-    
-    let envRT;
+    let envRT = null;
     try {
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const envScene = new THREE.Scene();
+      const envGeo = new THREE.SphereGeometry(20, 32, 32);
+      
+      // Use a simpler material for Firefox to avoid shader issues
+      const envMat = new THREE.MeshBasicMaterial({
+        side: THREE.BackSide,
+        color: 0x4d9fff
+      });
+      
+      const envMesh = new THREE.Mesh(envGeo, envMat);
+      envScene.add(envMesh);
+      
       envRT = pmrem.fromScene(envScene, 0.04);
       scene.environment = envRT.texture;
       console.log('✅ Environment map created');
     } catch (e) {
-      console.warn('⚠️ PMREM generation failed, using fallback:', e);
-      // Fallback: skip environment map
+      console.warn('⚠️ PMREM generation failed, continuing without environment map:', e);
+      // Fallback: skip environment map - not critical
     }
 
     // Bottle
@@ -140,6 +161,8 @@ export function initScene(canvas) {
     bottle.position.set(0, 0, 0);
     scene.add(bottle);
     console.log('✅ Bottle created and added to scene');
+    console.log('  - Bottle has', parts.length, 'parts');
+    console.log('  - Bottle position:', bottle.position);
     
     // Firefox-specific material adjustments
     if (isFirefox) {
@@ -158,10 +181,15 @@ export function initScene(canvas) {
     console.log('✨ Creating environment...');
     const platform = createPlatform();
     scene.add(platform);
+    console.log('  - Platform added');
+    
     const particles = createParticles();
     scene.add(particles);
+    console.log('  - Particles added:', particles.geometry.attributes.position.count, 'particles');
+    
     const crystals = createCrystals();
     scene.add(crystals);
+    console.log('  - Crystals added:', crystals.children.length, 'crystals');
     console.log('✅ Environment created');
 
     // Orbit controls (only enabled fully in showcase section)
@@ -175,6 +203,8 @@ export function initScene(canvas) {
     controls.enabled = false;
     controls.target.set(0, 1.4, 0);
     console.log('✅ Controls created');
+    console.log('  - Camera position:', camera.position);
+    console.log('  - Controls target:', controls.target);
 
     function onResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -188,6 +218,16 @@ export function initScene(canvas) {
     console.log('WebGL2 supported:', isWebGL2);
     console.log('Firefox detected:', isFirefox);
     console.log('Renderer info:', renderer.info.render);
+    console.log('Scene objects:', scene.children.length, 'total objects');
+    console.log('  -', bottle ? 'Bottle' : 'No bottle');
+    console.log('  -', platform ? 'Platform' : 'No platform');
+    console.log('  -', particles ? 'Particles' : 'No particles');
+    console.log('  -', crystals ? 'Crystals' : 'No crystals');
+    
+    // Test render to ensure canvas is working
+    console.log('🎨 Performing test render...');
+    renderer.render(scene, camera);
+    console.log('✅ Test render complete');
 
     // Premium post-processing effects (if WebGL2 available)
     let composer = null;
