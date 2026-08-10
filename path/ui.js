@@ -1,18 +1,18 @@
 // Handles all DOM-side interactions: cursor, magnetic buttons, reveal on scroll, accordion, counters, pricing toggle.
 
 export function initUI() {
-  // Loader
+  // Premium loader with enhanced timing
   window.addEventListener('load', () => {
     setTimeout(() => {
       document.getElementById('loader').classList.add('hidden');
-    }, 1600);
+    }, 2000);
   });
   setTimeout(() => {
     const l = document.getElementById('loader');
     if (l) l.classList.add('hidden');
-  }, 3200);
+  }, 3500);
 
-  // Custom cursor
+  // Premium custom cursor with smooth animation
   const dot = document.getElementById('cursor-dot');
   const glow = document.getElementById('cursor-glow');
   let mx = window.innerWidth / 2, my = window.innerHeight / 2;
@@ -22,8 +22,9 @@ export function initUI() {
     dot.style.left = mx + 'px'; dot.style.top = my + 'px';
   });
   function animCursor() {
-    gx += (mx - gx) * 0.18;
-    gy += (my - gy) * 0.18;
+    // Smooth easing for premium feel
+    gx += (mx - gx) * 0.15;
+    gy += (my - gy) * 0.15;
     glow.style.left = gx + 'px';
     glow.style.top = gy + 'px';
     requestAnimationFrame(animCursor);
@@ -42,29 +43,42 @@ export function initUI() {
     else navbar.classList.remove('scrolled');
   });
 
-  // Magnetic buttons
+  // Premium magnetic buttons with enhanced easing
   document.querySelectorAll('.magnetic').forEach(btn => {
     btn.addEventListener('mousemove', (e) => {
       const rect = btn.getBoundingClientRect();
       const relX = e.clientX - rect.left - rect.width / 2;
       const relY = e.clientY - rect.top - rect.height / 2;
-      btn.style.transform = `translate(${relX * 0.25}px, ${relY * 0.35}px)`;
+      // Smoother magnetic effect
+      btn.style.transform = `translate(${relX * 0.3}px, ${relY * 0.4}px)`;
+      btn.style.transition = 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
     });
     btn.addEventListener('mouseleave', () => {
       btn.style.transform = 'translate(0,0)';
+      btn.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
     });
   });
 
-  // Reveal on scroll (IntersectionObserver)
+  // Premium reveal on scroll with staggered animations
   const revealTargets = document.querySelectorAll('.section, .pain-card, .usp-card, .feature-card, .audience-card, .compare-col, .proof-card, .price-card, .outcome-pill');
   const io = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        entry.target.classList.add('reveal');
+        // Add staggered delay for premium feel
+        const delay = entry.target.dataset.revealDelay || 0;
+        setTimeout(() => {
+          entry.target.classList.add('reveal');
+        }, delay);
         if (entry.target.classList.contains('proof-card')) animateCounter(entry.target);
       }
     });
-  }, { threshold: 0.2 });
+  }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+  
+  // Add staggered delays to cards
+  document.querySelectorAll('.usp-card, .feature-card, .pain-card').forEach((el, i) => {
+    el.dataset.revealDelay = (i % 4) * 100;
+  });
+  
   revealTargets.forEach(el => io.observe(el));
 
   // Animated counters

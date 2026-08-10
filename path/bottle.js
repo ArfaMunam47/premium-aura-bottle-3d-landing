@@ -11,10 +11,10 @@ export function createBottle() {
     color: bodyColor,
     metalness: 0.85,
     roughness: 0.18,
-    clearcoat: 1,
-    clearcoatRoughness: 0.12,
+    clearcoat: 0.8, // Slightly reduced for Firefox
+    clearcoatRoughness: 0.15,
     reflectivity: 0.9,
-    envMapIntensity: 1.4,
+    envMapIntensity: 1.2, // Reduced for Firefox
     name: 'bodyMat'
   });
 
@@ -29,11 +29,14 @@ export function createBottle() {
     color: '#bfe9ff',
     metalness: 0,
     roughness: 0.05,
-    transmission: 0.95,
+    transmission: 0.6, // Reduced for Firefox compatibility
     thickness: 0.4,
     ior: 1.3,
     transparent: true,
-    opacity: 0.6
+    opacity: 0.7,
+    // Firefox-specific adjustments
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.2
   });
 
   const accentMat = new THREE.MeshPhysicalMaterial({
@@ -41,7 +44,10 @@ export function createBottle() {
     metalness: 0.3,
     roughness: 0.2,
     emissive: new THREE.Color('#2fb8e8'),
-    emissiveIntensity: 0.6
+    emissiveIntensity: 0.6,
+    // Ensure visibility in Firefox
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.3
   });
 
   // Body (main cylinder with slight barrel curve using LatheGeometry for premium shape)

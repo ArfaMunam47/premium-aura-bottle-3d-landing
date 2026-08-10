@@ -41,7 +41,9 @@ export function createParticles(count = 260) {
     opacity: 0.75,
     sizeAttenuation: true,
     blending: THREE.AdditiveBlending,
-    depthWrite: false
+    depthWrite: false,
+    // Firefox compatibility
+    sizeAttenuation: true
   });
 
   const points = new THREE.Points(geo, mat);
@@ -63,7 +65,11 @@ export function createPlatform() {
     metalness: 0.2,
     roughness: 0.3,
     transparent: true,
-    opacity: 0.5
+    opacity: 0.5,
+    // Premium enhancements
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.2,
+    envMapIntensity: 1.0
   });
   const ring1 = new THREE.Mesh(ringGeo, ringMat);
   ring1.name = 'platformRing1';
@@ -86,9 +92,11 @@ export function createPlatform() {
     color: '#0d0f16',
     metalness: 0.1,
     roughness: 0.1,
-    transmission: 0.3,
+    transmission: 0.2, // Reduced for Firefox
     transparent: true,
-    opacity: 0.25
+    opacity: 0.3,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.15
   });
   const disc = new THREE.Mesh(discGeo, discMat);
   disc.name = 'platformDisc';
@@ -111,11 +119,13 @@ export function createCrystals() {
       color: colors[i % colors.length],
       metalness: 0.3,
       roughness: 0.15,
-      transmission: 0.6,
+      transmission: 0.4, // Reduced for Firefox
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.6,
       emissive: colors[i % colors.length],
-      emissiveIntensity: 0.15
+      emissiveIntensity: 0.2, // Increased for better visibility
+      clearcoat: 0.4,
+      clearcoatRoughness: 0.2
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.name = `crystal_${i}`;

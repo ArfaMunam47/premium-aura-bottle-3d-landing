@@ -117,14 +117,14 @@ function animate() {
     controls.update();
   }
 
-  // Ring pulse
+  // Ring pulse (enhanced)
   const ring = bottle.getObjectByName('bottleRing');
   if (ring) {
     const pulse = 0.5 + Math.sin(t * 2) * 0.3;
     ring.material.emissiveIntensity = 0.4 + pulse * 0.5;
   }
 
-  // Particles gentle drift
+  // Particles gentle drift (enhanced)
   particles.rotation.y += 0.0006;
   const posAttr = particles.geometry.attributes.position;
   const base = particles.userData.basePositions;
@@ -133,16 +133,24 @@ function animate() {
   }
   posAttr.needsUpdate = true;
 
-  // Crystals float + rotate
+  // Crystals float + rotate (enhanced)
   crystals.children.forEach(c => {
     c.rotation.x += 0.003;
     c.rotation.y += 0.004;
     c.position.y = c.userData.baseY + Math.sin(t * c.userData.floatSpeed + c.userData.floatOffset) * 0.4;
   });
 
-  // Rim lights subtle color drift
+  // Premium lighting animations
   lights.blueRim.intensity = 5 + Math.sin(t * 0.7) * 1.5;
   lights.purpleRim.intensity = 5 + Math.cos(t * 0.6) * 1.5;
+  
+  // Animate new accent lights
+  if (lights.topLight) {
+    lights.topLight.intensity = 2 + Math.sin(t * 0.8) * 0.5;
+  }
+  if (lights.bottomLight) {
+    lights.bottomLight.intensity = 1.5 + Math.cos(t * 0.9) * 0.4;
+  }
 
   renderer.render(scene, camera);
 }
