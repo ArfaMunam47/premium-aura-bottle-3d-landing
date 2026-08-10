@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firefox 3D Debug Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #08090d;
+      color: #f4f5f7;
+      font-family: 'Courier New', monospace;
+    }
+    .test {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    .pass { border-left: 4px solid #34d399; }
+    .fail { border-left: 4px solid #ff6b6b; }
+    .warn { border-left: 4px solid #ff9d4d; }
+    h1 { color: #4d9fff; }
+    h2 { color: #b06bff; margin-top: 30px; }
+    #canvas {
+      width: 100%;
+      height: 400px;
+      background: #000;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    button {
+      background: linear-gradient(135deg, #4d9fff, #b06bff);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      margin: 5px;
+    }
+    button:hover { opacity: 0.9; }
+    .info { color: #4dd9ff; }
+    .error { color: #ff6b6b; }
+    .success { color: #34d399; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Firefox 3D Compatibility Debugger</h1>
+  
+  <h2>Browser Information</h2>
+  <div id="browser-info"></div>
+  
+  <h2>WebGL Tests</h2>
+  <div id="webgl-tests"></div>
+  
+  <h2>Three.js Tests</h2>
+  <div id="threejs-tests"></div>
+  
+  <h2>3D Canvas Test</h2>
+  <canvas id="canvas"></canvas>
+  <div>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="location.href='http://localhost:5173/'">Go to Main Site</button>
+  </div>
+  
+  <h2>Console Output</h2>
+  <div id="console-output" style="background: #000; padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    
+    const consoleDiv = document.getElementById('console-output');
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    function logToDiv(type, ...args) {
+      const msg = args.join(' ');
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = `[${type.toUpperCase()}] ${msg}`;
+      consoleDiv.appendChild(div);
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+    
+    console.log = (...args) => { originalLog.apply(console, args); logToDiv('info', ...args); };
+    console.error = (...args) => { originalError.apply(console, args); logToDiv('error', ...args); };
+    console.warn = (...args) => { originalWarn.apply(console, args); logToDiv('warn', ...args); };
+
+    function getBrowserInfo() {
+      const ua = navigator.userAgent;
+      const info = {
+        'User Agent': ua,
+        'Platform': navigator.platform,
+        'Language': navigator.language,
+        'Cookies Enabled': navigator.cookieEnabled,
+        'Hardware Concurrency': navigator.hardwareConcurrency,
+        'Device Memory': navigator.deviceMemory || 'N/A'
+      };
+      
+      let browser = 'Unknown';
+      if (ua.includes('Firefox')) browser = 'Firefox ' + ua.match(/Firefox\/(\d+)/)?.[1];
+      else if (ua.includes('Chrome')) browser = 'Chrome ' + ua.match(/Chrome\/(\d+)/)?.[1];
+      else if (ua.includes('Safari')) browser = 'Safari ' + ua.match(/Version\/(\d+)/)?.[1];
+      else if (ua.includes('Edge')) browser = 'Edge ' + ua.match(/Edge\/(\d+)/)?.[1];
+      
+      info['Browser'] = browser;
+      return info;
+    }
+
+    function testWebGL() {
+      const tests = [];
+      
+      // Test 1: WebGL support
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      tests.push({
+        name: 'WebGL Context Creation',
+        pass: !!gl,
+        details: gl ? (gl instanceof WebGL2RenderingContext ? 'WebGL2' : 'WebGL1') : 'Not supported'
+      });
+      
+      if (gl) {
+        // Test 2: Shader compilation
+        const vs = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vs, 'attribute vec4 position; void main() { gl_Position = position; }');
+        gl.compileShader(vs);
+        tests.push({
+          name: 'Shader Compilation',
+          pass: gl.getShaderParameter(vs, gl.COMPILE_STATUS),
+          details: gl.getShaderParameter(vs, gl.COMPILE_STATUS) ? 'Success' : gl.getShaderInfoLog(vs)
+        });
+        
+        // Test 3: Texture support
+        const texture = gl.createTexture();
+        tests.push({
+          name: 'Texture Support',
+          pass: !!texture,
+          details: texture ? 'Supported' : 'Not supported'
+        });
+        
+        // Test 4: Float textures
+        const floatTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, floatTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.FLOAT, new Float32Array([1, 1, 1, 1]));
+        tests.push({
+          name: 'Float Textures',
+          pass: gl.getError() === gl.NO_ERROR,
+          details: gl.getError() === gl.NO_ERROR ? 'Supported' : 'Not supported'
+        });
+        
+        // Test 5: Max texture size
+        const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+        tests.push({
+          name: 'Max Texture Size',
+          pass: maxTextureSize >= 2048,
+          details: `${maxTextureSize}px`
+        });
+      }
+      
+      return tests;
+    }
+
+    function testThreeJS() {
+      const tests = [];
+      
+      try {
+        // Test 1: Three.js loaded
+        tests.push({
+          name: 'Three.js Import',
+          pass: !!THREE,
+          details: THREE.REVISION || 'Unknown version'
+        });
+        
+        // Test 2: WebGLRenderer
+        const canvas = document.createElement('canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        tests.push({
+          name: 'WebGLRenderer Creation',
+          pass: !!renderer,
+          details: 'Success'
+        });
+        
+        // Test 3: Scene creation
+        const scene = new THREE.Scene();
+        tests.push({
+          name: 'Scene Creation',
+          pass: !!scene,
+          details: 'Success'
+        });
+        
+        // Test 4: Camera creation
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        tests.push({
+          name: 'Camera Creation',
+          pass: !!camera,
+          details: 'Success'
+        });
+        
+        // Test 5: Material creation
+        const material = new THREE.MeshPhysicalMaterial({
+          color: 0x4d9fff,
+          metalness: 0.8,
+          roughness: 0.2
+        });
+        tests.push({
+          name: 'MeshPhysicalMaterial',
+          pass: !!material,
+          details: 'Success'
+        });
+        
+        // Test 6: Geometry creation
+        const geometry = new THREE.SphereGeometry(1, 32, 32);
+        tests.push({
+          name: 'SphereGeometry',
+          pass: !!geometry,
+          details: 'Success'
+        });
+        
+        // Test 7: Mesh creation
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+        tests.push({
+          name: 'Mesh Creation & Add to Scene',
+          pass: scene.children.length === 1,
+          details: 'Success'
+        });
+        
+        // Test 8: Render test
+        renderer.render(scene, camera);
+        tests.push({
+          name: 'Render Test',
+          pass: true,
+          details: 'Rendered successfully'
+        });
+        
+        // Test 9: Transmission material (Firefox issue)
+        const transmissionMat = new THREE.MeshPhysicalMaterial({
+          transmission: 0.6,
+          thickness: 0.5
+        });
+        tests.push({
+          name: 'Transmission Material',
+          pass: !!transmissionMat,
+          details: 'Created (may render differently in Firefox)'
+        });
+        
+        renderer.dispose();
+        
+      } catch (error) {
+        tests.push({
+          name: 'Three.js Error',
+          pass: false,
+          details: error.message
+        });
+      }
+      
+      return tests;
+    }
+
+    function displayResults(title, tests, containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = `<h3>${title}</h3>`;
+      
+      let passCount = 0;
+      tests.forEach(test => {
+        if (test.pass) passCount++;
+        const div = document.createElement('div');
+        div.className = `test ${test.pass ? 'pass' : 'fail'}`;
+        div.innerHTML = `
+          <strong>${test.pass ? '✅' : '❌'} ${test.name}</strong><br>
+          <span class="${test.pass ? 'success' : 'error'}">${test.details}</span>
+        `;
+        container.appendChild(div);
+      });
+      
+      const summary = document.createElement('div');
+      summary.className = 'test';
+      summary.innerHTML = `<strong>Summary:</strong> <span class="${passCount === tests.length ? 'success' : 'warn'}">${passCount}/${tests.length} tests passed</span>`;
+      container.appendChild(summary);
+    }
+
+    function runAllTests() {
+      console.log('🧪 Running all tests...');
+      
+      // Browser info
+      const browserInfo = getBrowserInfo();
+      const browserDiv = document.getElementById('browser-info');
+      browserDiv.innerHTML = '';
+      Object.entries(browserInfo).forEach(([key, value]) => {
+        const div = document.createElement('div');
+        div.className = 'test';
+        div.innerHTML = `<strong>${key}:</strong> <span class="info">${value}</span>`;
+        browserDiv.appendChild(div);
+      });
+      
+      // WebGL tests
+      const webglTests = testWebGL();
+      displayResults('WebGL Capabilities', webglTests, 'webgl-tests');
+      
+      // Three.js tests
+      setTimeout(() => {
+        const threeTests = testThreeJS();
+        displayResults('Three.js Functionality', threeTests, 'threejs-tests');
+        
+        // 3D render test
+        console.log('🎨 Testing 3D render...');
+        const canvas = document.getElementById('canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x08090d);
+        
+        const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+        camera.position.set(0, 0, 5);
+        
+        // Add lights
+        const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambient);
+        const directional = new THREE.DirectionalLight(0x4d9fff, 2);
+        directional.position.set(2, 2, 5);
+        scene.add(directional);
+        
+        // Add bottle-like object
+        const geometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
+        const material = new THREE.MeshPhysicalMaterial({
+          color: 0xe8ecef,
+          metalness: 0.85,
+          roughness: 0.18,
+          clearcoat: 0.8
+        });
+        const bottle = new THREE.Mesh(geometry, material);
+        scene.add(bottle);
+        
+        // Add particles
+        const particlesGeo = new THREE.BufferGeometry();
+        const particleCount = 100;
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount * 3; i += 3) {
+          positions[i] = (Math.random() - 0.5) * 10;
+          positions[i + 1] = (Math.random() - 0.5) * 10;
+          positions[i + 2] = (Math.random() - 0.5) * 10;
+        }
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particlesMat = new THREE.PointsMaterial({ color: 0x4d9fff, size: 0.05 });
+        const particles = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particles);
+        
+        // Animate
+        function animate() {
+          requestAnimationFrame(animate);
+          bottle.rotation.y += 0.01;
+          particles.rotation.y += 0.001;
+          renderer.render(scene, camera);
+        }
+        animate();
+        
+        console.log('✅ 3D render test started - check canvas above');
+      }, 500);
+    }
+
+    // Run tests on load
+    window.addEventListener('load', () => {
+      console.log('🚀 Debug page loaded');
+      setTimeout(runAllTests, 500);
+    });
+  </script>
+</body>
+</html>
