@@ -41,9 +41,7 @@ export function createParticles(count = 260) {
     opacity: 0.75,
     sizeAttenuation: true,
     blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    // Firefox compatibility
-    sizeAttenuation: true
+    depthWrite: false
   });
 
   const points = new THREE.Points(geo, mat);
@@ -66,7 +64,6 @@ export function createPlatform() {
     roughness: 0.3,
     transparent: true,
     opacity: 0.5,
-    // Premium enhancements
     clearcoat: 0.5,
     clearcoatRoughness: 0.2,
     envMapIntensity: 1.0
@@ -92,7 +89,7 @@ export function createPlatform() {
     color: '#0d0f16',
     metalness: 0.1,
     roughness: 0.1,
-    transmission: 0.2, // Reduced for Firefox
+    transmission: 0.2,
     transparent: true,
     opacity: 0.3,
     clearcoat: 0.3,
@@ -119,11 +116,11 @@ export function createCrystals() {
       color: colors[i % colors.length],
       metalness: 0.3,
       roughness: 0.15,
-      transmission: 0.4, // Reduced for Firefox
+      transmission: 0.4,
       transparent: true,
       opacity: 0.6,
       emissive: colors[i % colors.length],
-      emissiveIntensity: 0.2, // Increased for better visibility
+      emissiveIntensity: 0.2,
       clearcoat: 0.4,
       clearcoatRoughness: 0.2
     });

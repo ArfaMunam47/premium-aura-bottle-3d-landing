@@ -11,10 +11,10 @@ export function createBottle() {
     color: bodyColor,
     metalness: 0.85,
     roughness: 0.18,
-    clearcoat: 0.8, // Slightly reduced for Firefox
+    clearcoat: 0.8,
     clearcoatRoughness: 0.15,
     reflectivity: 0.9,
-    envMapIntensity: 1.2, // Reduced for Firefox
+    envMapIntensity: 1.2,
     name: 'bodyMat'
   });
 
@@ -29,12 +29,11 @@ export function createBottle() {
     color: '#bfe9ff',
     metalness: 0,
     roughness: 0.05,
-    transmission: 0.6, // Reduced for Firefox compatibility
+    transmission: 0.6,
     thickness: 0.4,
     ior: 1.3,
     transparent: true,
     opacity: 0.7,
-    // Firefox-specific adjustments
     clearcoat: 0.3,
     clearcoatRoughness: 0.2
   });
@@ -45,7 +44,6 @@ export function createBottle() {
     roughness: 0.2,
     emissive: new THREE.Color('#2fb8e8'),
     emissiveIntensity: 0.6,
-    // Ensure visibility in Firefox
     clearcoat: 0.5,
     clearcoatRoughness: 0.3
   });
@@ -63,6 +61,7 @@ export function createBottle() {
     points.push(new THREE.Vector2(Math.max(r, 0.35), y));
   }
   const bodyGeo = new THREE.LatheGeometry(points, 48);
+  bodyGeo.computeVertexNormals(); // Ensure normals are computed for proper lighting
   const body = new THREE.Mesh(bodyGeo, steelMat);
   body.name = 'bottleBody';
   body.position.y = 0;
@@ -135,7 +134,13 @@ export function createBottle() {
 
   // Store rest positions for explode/reassemble
   const parts = [body, base, ring, neck, capGroup, inner, led, sensor];
-  parts.forEach(p => { p.userData.restPos = p.position.clone(); });
+  parts.forEach(p => { 
+    p.userData.restPos = p.position.clone();
+    // Ensure all parts have proper materials
+    if (!p.material) {
+      console.warn(`Part ${p.name} has no material`);
+    }
+  });
 
   // Explode direction offsets
   const explodeOffsets = {

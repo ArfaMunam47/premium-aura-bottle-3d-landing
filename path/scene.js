@@ -27,7 +27,12 @@ export function initScene(canvas) {
     }
     console.log('✅ WebGL context test passed');
     
-    // Try multiple WebGL context configurations for Firefox compatibility
+    // Ensure canvas is properly sized before creating renderer
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    console.log(`✅ Canvas sized: ${canvas.width}x${canvas.height}`);
+    
+    // Try multiple WebGL context configurations for browser compatibility
     let renderer;
     const configs = [
       { antialias: true, alpha: true, stencil: false, depth: true },
@@ -42,7 +47,10 @@ export function initScene(canvas) {
           canvas, 
           ...config,
           powerPreference: 'high-performance',
-          failIfMajorPerformanceCaveat: false
+          failIfMajorPerformanceCaveat: false,
+          // Chrome-specific optimizations
+          premultipliedAlpha: true,
+          preserveDrawingBuffer: false
         });
         console.log(`✅ WebGLRenderer created with config:`, config);
         break;
@@ -68,7 +76,7 @@ export function initScene(canvas) {
     // Set clear color for debugging
     renderer.setClearColor(0x08090d, 1);
     
-    // Firefox-compatible color space and tone mapping
+    // Chrome/Firefox-compatible color space and tone mapping
     if (isWebGL2) {
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -78,6 +86,11 @@ export function initScene(canvas) {
       renderer.toneMapping = THREE.LinearToneMapping;
     }
     renderer.toneMappingExposure = 1.05;
+    
+    // Verify renderer is working
+    console.log('✅ Renderer configured');
+    console.log('  - Size:', renderer.getSize(new THREE.Vector2()));
+    console.log('  - Pixel Ratio:', renderer.getPixelRatio());
     
     // Shadow settings with Firefox compatibility
     renderer.shadowMap.enabled = true;
@@ -131,14 +144,16 @@ export function initScene(canvas) {
     bottomLight.position.set(0, -3, 0);
     scene.add(bottomLight);
 
-    // Environment map (Firefox-compatible)
+    // Environment map (Chrome/Firefox-compatible)
     let envRT = null;
     try {
       const pmrem = new THREE.PMREMGenerator(renderer);
+      pmrem.compileEquirectangularShader();
+      
       const envScene = new THREE.Scene();
       const envGeo = new THREE.SphereGeometry(20, 32, 32);
       
-      // Use a simpler material for Firefox to avoid shader issues
+      // Use a simpler material for compatibility
       const envMat = new THREE.MeshBasicMaterial({
         side: THREE.BackSide,
         color: 0x4d9fff
@@ -148,8 +163,11 @@ export function initScene(canvas) {
       envScene.add(envMesh);
       
       envRT = pmrem.fromScene(envScene, 0.04);
-      scene.environment = envRT.texture;
-      console.log('✅ Environment map created');
+      if (envRT && envRT.texture) {
+        scene.environment = envRT.texture;
+        console.log('✅ Environment map created');
+      }
+      pmrem.dispose();
     } catch (e) {
       console.warn('⚠️ PMREM generation failed, continuing without environment map:', e);
       // Fallback: skip environment map - not critical
@@ -228,6 +246,12 @@ export function initScene(canvas) {
     console.log('🎨 Performing test render...');
     renderer.render(scene, camera);
     console.log('✅ Test render complete');
+    
+    // Force a second render to ensure everything is working
+    requestAnimationFrame(() => {
+      renderer.render(scene, camera);
+      console.log('✅ Second test render complete');
+    });
 
     // Premium post-processing effects (if WebGL2 available)
     let composer = null;

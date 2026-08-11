@@ -10,10 +10,25 @@ const canvas = document.getElementById('bg-canvas');
 let ctx;
 let has3DError = false;
 
+// Ensure canvas exists and is visible
+if (!canvas) {
+  console.error('❌ Canvas element not found!');
+  has3DError = true;
+} else {
+  console.log('✅ Canvas element found');
+  console.log('  - Canvas size:', canvas.width, 'x', canvas.height);
+  console.log('  - Canvas display:', window.getComputedStyle(canvas).display);
+  console.log('  - Canvas visibility:', window.getComputedStyle(canvas).visibility);
+}
+
 try {
   console.log('🎬 Initializing 3D scene...');
+  console.log('  - Browser:', navigator.userAgent);
+  console.log('  - WebGL support:', !!document.createElement('canvas').getContext('webgl2') || !!document.createElement('canvas').getContext('webgl'));
+  
   ctx = initScene(canvas);
   console.log('✅ 3D scene initialized successfully');
+  console.log('  - Context returned:', !!ctx);
 } catch (err) {
   has3DError = true;
   console.error('❌ 3D init failed:', err);
@@ -24,17 +39,19 @@ try {
   
   // Show a message to the user
   const root = document.getElementById('root');
-  if (root && err.message.includes('WebGL')) {
+  if (root) {
     const warning = document.createElement('div');
-    warning.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(255,100,100,0.9);color:white;padding:15px 25px;border-radius:10px;z-index:99999;font-family:Arial,sans-serif;';
-    warning.textContent = '3D features require WebGL. Please update your browser or enable hardware acceleration.';
+    warning.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(255,100,100,0.9);color:white;padding:15px 25px;border-radius:10px;z-index:99999;font-family:Arial,sans-serif;max-width:90%;text-align:center;';
+    warning.textContent = '3D features require WebGL. Please ensure hardware acceleration is enabled in your browser settings.';
     document.body.appendChild(warning);
   }
 }
 
 if (!ctx) {
   console.error('❌ Context is null - 3D scene not initialized');
+  console.error('  - has3DError:', has3DError);
 } else {
+  console.log('✅ Starting animation loop setup...');
   const { scene, camera, renderer, controls, bottle, parts, explodeOffsets, materials, particles, crystals, lights } = ctx;
 
   // Showcase interaction state
@@ -182,8 +199,18 @@ if (!ctx) {
     }
   }
   
-  if (!has3DError) {
+  if (!has3DError && renderer) {
+    console.log('🚀 Starting animation loop...');
     renderer.setAnimationLoop(animate);
-    console.log('✅ Animation loop started');
+    console.log('✅ Animation loop started successfully');
+    
+    // Verify animation is running
+    setTimeout(() => {
+      console.log('🔍 Animation loop health check...');
+      console.log('  - Renderer info:', renderer.info.render);
+      console.log('  - Scene children:', scene.children.length);
+    }, 2000);
+  } else {
+    console.error('❌ Cannot start animation loop - renderer or context missing');
   }
 }
