@@ -32,36 +32,20 @@ export function initScene(canvas) {
     canvas.height = window.innerHeight;
     console.log(`✅ Canvas sized: ${canvas.width}x${canvas.height}`);
     
-    // Try multiple WebGL context configurations for browser compatibility
+    // Create renderer with Chrome-optimized settings
     let renderer;
-    const configs = [
-      { antialias: true, alpha: true, stencil: false, depth: true },
-      { antialias: false, alpha: true, stencil: false, depth: true },
-      { antialias: true, alpha: false, stencil: false, depth: true },
-      { antialias: false, alpha: false, stencil: false, depth: true }
-    ];
-    
-    for (const config of configs) {
-      try {
-        renderer = new THREE.WebGLRenderer({ 
-          canvas, 
-          ...config,
-          powerPreference: 'high-performance',
-          failIfMajorPerformanceCaveat: false,
-          // Chrome-specific optimizations
-          premultipliedAlpha: true,
-          preserveDrawingBuffer: false
-        });
-        console.log(`✅ WebGLRenderer created with config:`, config);
-        break;
-      } catch (e) {
-        console.warn(`⚠️ Failed with config ${JSON.stringify(config)}:`, e);
-        continue;
-      }
-    }
-    
-    if (!renderer) {
-      throw new Error('Failed to create WebGLRenderer with any configuration');
+    try {
+      renderer = new THREE.WebGLRenderer({ 
+        canvas, 
+        antialias: true,
+        alpha: false,
+        powerPreference: 'high-performance',
+        failIfMajorPerformanceCaveat: false
+      });
+      console.log('✅ WebGLRenderer created successfully');
+    } catch (e) {
+      console.error('❌ Failed to create WebGLRenderer:', e);
+      throw new Error('Failed to create WebGLRenderer: ' + e.message);
     }
     
     console.log('✅ WebGLRenderer created');
@@ -73,21 +57,14 @@ export function initScene(canvas) {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     
-    // Set clear color for debugging
+    // Set clear color
     renderer.setClearColor(0x08090d, 1);
     
-    // Chrome/Firefox-compatible color space and tone mapping
-    if (isWebGL2) {
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    } else {
-      // Fallback for browsers without WebGL2
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.LinearToneMapping;
-    }
+    // Color space and tone mapping
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     
-    // Verify renderer is working
     console.log('✅ Renderer configured');
     console.log('  - Size:', renderer.getSize(new THREE.Vector2()));
     console.log('  - Pixel Ratio:', renderer.getPixelRatio());
