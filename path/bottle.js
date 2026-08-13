@@ -47,6 +47,22 @@ export function createBottle() {
     clearcoat: 0.5,
     clearcoatRoughness: 0.3
   });
+  
+  // LED material with better compatibility
+  const ledMat = new THREE.MeshStandardMaterial({ 
+    color: '#4dd9ff', 
+    emissive: '#4dd9ff', 
+    emissiveIntensity: 2,
+    metalness: 0.3,
+    roughness: 0.2
+  });
+  
+  // Sensor material
+  const sensorMat = new THREE.MeshStandardMaterial({ 
+    color: '#333', 
+    metalness: 0.6, 
+    roughness: 0.4 
+  });
 
   // Body (main cylinder with slight barrel curve using LatheGeometry for premium shape)
   const points = [];
@@ -116,7 +132,6 @@ export function createBottle() {
 
   // UV-C LED chip (small internal part, visible in exploded view)
   const ledGeo = new THREE.SphereGeometry(0.08, 16, 16);
-  const ledMat = new THREE.MeshStandardMaterial({ color: '#4dd9ff', emissive: '#4dd9ff', emissiveIntensity: 2 });
   const led = new THREE.Mesh(ledGeo, ledMat);
   led.name = 'uvLed';
   led.position.y = 3.1;
@@ -124,7 +139,6 @@ export function createBottle() {
 
   // Bottom sensor disc
   const sensorGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.03, 24);
-  const sensorMat = new THREE.MeshStandardMaterial({ color: '#333', metalness: 0.6, roughness: 0.4 });
   const sensor = new THREE.Mesh(sensorGeo, sensorMat);
   sensor.name = 'sensorDisc';
   sensor.position.y = 0.08;

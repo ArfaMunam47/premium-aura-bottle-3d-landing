@@ -6,51 +6,62 @@ import { initUI } from './ui.js';
 // Hide the loader first so the page never gets stuck on the AURA screen.
 initUI();
 
-const canvas = document.getElementById('bg-canvas');
+// Wait for DOM to be fully ready before initializing 3D
 let ctx;
 let has3DError = false;
 
-// Ensure canvas exists and is visible
-if (!canvas) {
-  console.error('❌ Canvas element not found!');
-  has3DError = true;
-} else {
+function init3D() {
+  const canvas = document.getElementById('bg-canvas');
+  
+  // Ensure canvas exists and is visible
+  if (!canvas) {
+    console.error('❌ Canvas element not found!');
+    has3DError = true;
+    return;
+  }
+  
   console.log('✅ Canvas element found');
   console.log('  - Canvas size:', canvas.width, 'x', canvas.height);
   console.log('  - Canvas display:', window.getComputedStyle(canvas).display);
   console.log('  - Canvas visibility:', window.getComputedStyle(canvas).visibility);
-}
-
-try {
-  console.log('🎬 Initializing 3D scene...');
-  console.log('  - Browser:', navigator.userAgent);
-  console.log('  - WebGL support:', !!document.createElement('canvas').getContext('webgl2') || !!document.createElement('canvas').getContext('webgl'));
   
-  ctx = initScene(canvas);
-  console.log('✅ 3D scene initialized successfully');
-  console.log('  - Context returned:', !!ctx);
-} catch (err) {
-  has3DError = true;
-  console.error('❌ 3D init failed:', err);
-  console.error('Error details:', err.message, err.stack);
-  // Keep the page usable even if WebGL/3D fails.
-  const loader = document.getElementById('loader');
-  if (loader) loader.classList.add('hidden');
-  
-  // Show a message to the user
-  const root = document.getElementById('root');
-  if (root) {
-    const warning = document.createElement('div');
-    warning.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(255,100,100,0.9);color:white;padding:15px 25px;border-radius:10px;z-index:99999;font-family:Arial,sans-serif;max-width:90%;text-align:center;';
-    warning.textContent = '3D features require WebGL. Please ensure hardware acceleration is enabled in your browser settings.';
-    document.body.appendChild(warning);
+  try {
+    console.log('🎬 Initializing 3D scene...');
+    console.log('  - Browser:', navigator.userAgent);
+    console.log('  - WebGL support:', !!document.createElement('canvas').getContext('webgl2') || !!document.createElement('canvas').getContext('webgl'));
+    
+    // Ensure canvas is properly sized before initialization
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    console.log('✅ Canvas pre-sized:', canvas.width, 'x', canvas.height);
+    
+    ctx = initScene(canvas);
+    console.log('✅ 3D scene initialized successfully');
+    console.log('  - Context returned:', !!ctx);
+  } catch (err) {
+    has3DError = true;
+    console.error('❌ 3D init failed:', err);
+    console.error('Error details:', err.message, err.stack);
+    // Keep the page usable even if WebGL/3D fails.
+    const loader = document.getElementById('loader');
+    if (loader) loader.classList.add('hidden');
+    
+    // Show a message to the user
+    const root = document.getElementById('root');
+    if (root) {
+      const warning = document.createElement('div');
+      warning.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(255,100,100,0.9);color:white;padding:15px 25px;border-radius:10px;z-index:99999;font-family:Arial,sans-serif;max-width:90%;text-align:center;';
+      warning.textContent = '3D features require WebGL. Please ensure hardware acceleration is enabled in your browser settings.';
+      document.body.appendChild(warning);
+    }
   }
-}
 
-if (!ctx) {
-  console.error('❌ Context is null - 3D scene not initialized');
-  console.error('  - has3DError:', has3DError);
-} else {
+  if (!ctx) {
+    console.error('❌ Context is null - 3D scene not initialized');
+    console.error('  - has3DError:', has3DError);
+    return;
+  }
+  
   console.log('✅ Starting animation loop setup...');
   const { scene, camera, renderer, controls, bottle, parts, explodeOffsets, materials, particles, crystals, lights } = ctx;
 
@@ -201,16 +212,48 @@ if (!ctx) {
   
   if (!has3DError && renderer) {
     console.log('🚀 Starting animation loop...');
-    renderer.setAnimationLoop(animate);
-    console.log('✅ Animation loop started successfully');
+    
+    // Use requestAnimationFrame fallback for better compatibility
+    if (renderer.setAnimationLoop) {
+      renderer.setAnimationLoop(animate);
+      console.log('✅ Animation loop started via setAnimationLoop');
+    } else {
+      // Fallback for older browsers
+      function fallbackLoop() {
+        if (has3DError) return;
+        animate();
+        requestAnimationFrame(fallbackLoop);
+      }
+      fallbackLoop();
+      console.log('✅ Animation loop started via requestAnimationFrame fallback');
+    }
     
     // Verify animation is running
     setTimeout(() => {
       console.log('🔍 Animation loop health check...');
       console.log('  - Renderer info:', renderer.info.render);
       console.log('  - Scene children:', scene.children.length);
+      console.log('  - Animation running:', !has3DError);
     }, 2000);
   } else {
     console.error('❌ Cannot start animation loop - renderer or context missing');
+    console.error('  - has3DError:', has3DError);
+    console.error('  - renderer:', !!renderer);
   }
 }
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init3D);
+} else {
+  // DOM already loaded
+  init3D();
+}
+
+// Also initialize on window load as backup
+window.addEventListener('load', () => {
+  if (!ctx && !has3DError) {
+    console.log('🔄 Retrying 3D initialization on window load...');
+    init3D();
+  }
+});

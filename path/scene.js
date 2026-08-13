@@ -40,7 +40,10 @@ export function initScene(canvas) {
         antialias: true,
         alpha: false,
         powerPreference: 'high-performance',
-        failIfMajorPerformanceCaveat: false
+        failIfMajorPerformanceCaveat: false,
+        stencil: false, // Disable stencil buffer for better compatibility
+        depth: true,
+        premultipliedAlpha: false
       });
       console.log('✅ WebGLRenderer created successfully');
     } catch (e) {
@@ -64,6 +67,11 @@ export function initScene(canvas) {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
+    
+    // Ensure renderer is properly initialized
+    console.log('✅ Renderer configured');
+    console.log('  - Size:', renderer.getSize(new THREE.Vector2()));
+    console.log('  - Pixel Ratio:', renderer.getPixelRatio());
     
     console.log('✅ Renderer configured');
     console.log('  - Size:', renderer.getSize(new THREE.Vector2()));
@@ -164,12 +172,32 @@ export function initScene(canvas) {
       console.log('🔧 Applying Firefox material fixes...');
       // Reduce transmission for better Firefox compatibility
       parts.forEach(part => {
-        if (part.material && part.material.transmission) {
-          part.material.transmission = 0.5; // Lower transmission for Firefox
+        if (part.material) {
+          if (part.material.transmission !== undefined) {
+            part.material.transmission = 0.5; // Lower transmission for Firefox
+          }
+          if (part.material.clearcoat !== undefined) {
+            part.material.clearcoat = 0.5; // Reduce clearcoat for Firefox
+          }
+          if (part.material.envMapIntensity !== undefined) {
+            part.material.envMapIntensity = 0.8; // Reduce env map intensity
+          }
           part.material.needsUpdate = true;
-          console.log('  - Adjusted transmission for:', part.name);
+          console.log('  - Adjusted material for:', part.name);
         }
       });
+      
+      // Also adjust materials object
+      if (materials.steelMat) {
+        materials.steelMat.clearcoat = 0.5;
+        materials.steelMat.envMapIntensity = 0.8;
+        materials.steelMat.needsUpdate = true;
+      }
+      if (materials.glassMat) {
+        materials.glassMat.transmission = 0.5;
+        materials.glassMat.clearcoat = 0.3;
+        materials.glassMat.needsUpdate = true;
+      }
     }
 
     // Platform + particles + crystals
@@ -224,11 +252,16 @@ export function initScene(canvas) {
     renderer.render(scene, camera);
     console.log('✅ Test render complete');
     
-    // Force a second render to ensure everything is working
-    requestAnimationFrame(() => {
+    // Force multiple renders to ensure everything is working
+    let renderCount = 0;
+    const testRenderInterval = setInterval(() => {
       renderer.render(scene, camera);
-      console.log('✅ Second test render complete');
-    });
+      renderCount++;
+      if (renderCount >= 3) {
+        clearInterval(testRenderInterval);
+        console.log('✅ Test renders complete');
+      }
+    }, 100);
 
     // Premium post-processing effects (if WebGL2 available)
     let composer = null;

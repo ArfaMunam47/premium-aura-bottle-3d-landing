@@ -43,6 +43,8 @@ export function createParticles(count = 260) {
     blending: THREE.AdditiveBlending,
     depthWrite: false
   });
+  
+  console.log('✅ Particles material created');
 
   const points = new THREE.Points(geo, mat);
   points.name = 'floatingParticles';
@@ -68,6 +70,8 @@ export function createPlatform() {
     clearcoatRoughness: 0.2,
     envMapIntensity: 1.0
   });
+  
+  console.log('✅ Platform ring material created');
   const ring1 = new THREE.Mesh(ringGeo, ringMat);
   ring1.name = 'platformRing1';
   ring1.rotation.x = Math.PI / 2;
@@ -95,6 +99,8 @@ export function createPlatform() {
     clearcoat: 0.3,
     clearcoatRoughness: 0.15
   });
+  
+  console.log('✅ Platform disc material created');
   const disc = new THREE.Mesh(discGeo, discMat);
   disc.name = 'platformDisc';
   disc.rotation.x = -Math.PI / 2;
@@ -124,6 +130,8 @@ export function createCrystals() {
       clearcoat: 0.4,
       clearcoatRoughness: 0.2
     });
+    
+    console.log(`✅ Crystal ${i} material created`);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.name = `crystal_${i}`;
     const angle = (i / 10) * Math.PI * 2;
