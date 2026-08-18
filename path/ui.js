@@ -1,100 +1,170 @@
-// Handles all DOM-side interactions: cursor, magnetic buttons, reveal on scroll, accordion, counters, pricing toggle.
+// DOM interactions: cursor, magnetic buttons, reveal on scroll, accordion, counters, pricing toggle.
 
-export function initUI() {
-  // Premium loader with enhanced timing
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      document.getElementById('loader').classList.add('hidden');
-    }, 2000);
-  });
-  setTimeout(() => {
-    const l = document.getElementById('loader');
-    if (l) l.classList.add('hidden');
-  }, 3500);
+export function initUI(options = {}) {
+  const { prefersReducedMotion = false } = options;
+  const callbacks = {};
 
-  // Premium custom cursor with smooth animation
+  function hideLoader() {
+    document.getElementById('loader')?.classList.add('hidden');
+  }
+
+  // Loader hides when 3D is ready so the cinematic unveil plays on canvas
+  callbacks.onLoaderReady = hideLoader;
+  callbacks.onIntroComplete = () => {
+    document.querySelector('.scroll-hint')?.classList.add('visible');
+  };
+  setTimeout(hideLoader, 5000);
+
+  // Custom cursor (desktop only, respects reduced motion)
   const dot = document.getElementById('cursor-dot');
   const glow = document.getElementById('cursor-glow');
-  let mx = window.innerWidth / 2, my = window.innerHeight / 2;
-  let gx = mx, gy = my;
-  window.addEventListener('mousemove', (e) => {
-    mx = e.clientX; my = e.clientY;
-    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-  });
-  function animCursor() {
-    // Smooth easing for premium feel
-    gx += (mx - gx) * 0.15;
-    gy += (my - gy) * 0.15;
-    glow.style.left = gx + 'px';
-    glow.style.top = gy + 'px';
-    requestAnimationFrame(animCursor);
-  }
-  animCursor();
+  let mx = window.innerWidth / 2;
+  let my = window.innerHeight / 2;
+  let gx = mx;
+  let gy = my;
 
-  document.querySelectorAll('a, button, .swatch, .acc-head, .usp-card, .feature-card, .pain-card, .audience-card, .price-card').forEach(el => {
-    el.addEventListener('mouseenter', () => glow.classList.add('hover'));
-    el.addEventListener('mouseleave', () => glow.classList.remove('hover'));
+  if (!prefersReducedMotion && window.matchMedia('(pointer: fine)').matches) {
+    window.addEventListener('mousemove', (e) => {
+      mx = e.clientX;
+      my = e.clientY;
+      if (dot) {
+        dot.style.left = mx + 'px';
+        dot.style.top = my + 'px';
+      }
+    });
+    function animCursor() {
+      gx += (mx - gx) * 0.15;
+      gy += (my - gy) * 0.15;
+      if (glow) {
+        glow.style.left = gx + 'px';
+        glow.style.top = gy + 'px';
+      }
+      requestAnimationFrame(animCursor);
+    }
+    animCursor();
+
+    document.querySelectorAll('a, button, .swatch, .acc-head, .usp-card, .feature-card, .pain-card, .audience-card, .price-card').forEach(el => {
+      el.addEventListener('mouseenter', () => glow?.classList.add('hover'));
+      el.addEventListener('mouseleave', () => glow?.classList.remove('hover'));
+    });
+  } else {
+    document.documentElement.classList.add('no-custom-cursor');
+  }
+
+  // Mobile navigation
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinks = document.querySelector('.nav-links');
+  navToggle?.addEventListener('click', () => {
+    const open = navLinks?.classList.toggle('open');
+    navToggle.classList.toggle('open', open);
+    navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.classList.toggle('nav-open', open);
+  });
+  navLinks?.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      navToggle?.classList.remove('open');
+      navToggle?.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('nav-open');
+    });
   });
 
   // Navbar scroll state
   const navbar = document.getElementById('navbar');
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 40) navbar.classList.add('scrolled');
-    else navbar.classList.remove('scrolled');
+  const onScroll = () => {
+    navbar?.classList.toggle('scrolled', window.scrollY > 40);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Magnetic buttons
+  if (!prefersReducedMotion) {
+    document.querySelectorAll('.magnetic').forEach(btn => {
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const relX = e.clientX - rect.left - rect.width / 2;
+        const relY = e.clientY - rect.top - rect.height / 2;
+        btn.style.transform = `translate(${relX * 0.25}px, ${relY * 0.3}px)`;
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = '';
+      });
+    });
+  }
+
+  // CTA wiring
+  document.querySelectorAll('[data-scroll-to]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(el.dataset.scrollTo);
+      target?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    });
   });
 
-  // Premium magnetic buttons with enhanced easing
-  document.querySelectorAll('.magnetic').forEach(btn => {
-    btn.addEventListener('mousemove', (e) => {
-      const rect = btn.getBoundingClientRect();
-      const relX = e.clientX - rect.left - rect.width / 2;
-      const relY = e.clientY - rect.top - rect.height / 2;
-      // Smoother magnetic effect
-      btn.style.transform = `translate(${relX * 0.3}px, ${relY * 0.4}px)`;
-      btn.style.transition = 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
-    });
-    btn.addEventListener('mouseleave', () => {
-      btn.style.transform = 'translate(0,0)';
-      btn.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+  // Story progress dots
+  document.querySelectorAll('.story-dot[data-scroll-to]').forEach(dot => {
+    dot.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(dot.dataset.scrollTo);
+      target?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     });
   });
 
-  // Premium reveal on scroll with staggered animations
+  // Hide navbar during intro
+  const storyProgress = document.getElementById('story-progress');
+  const observer = new MutationObserver(() => {
+    const playing = document.body.classList.contains('intro-playing');
+    navbar?.classList.toggle('intro-hidden', playing);
+    storyProgress?.classList.toggle('intro-hidden', playing);
+  });
+  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+  // Newsletter
+  const newsletterForm = document.querySelector('.newsletter-input');
+  newsletterForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = newsletterForm.querySelector('input');
+    const btn = newsletterForm.querySelector('button');
+    if (input?.value && btn) {
+      btn.textContent = 'Subscribed!';
+      input.value = '';
+      setTimeout(() => { btn.textContent = 'Subscribe'; }, 2500);
+    }
+  });
+
+  // Reveal on scroll
   const revealTargets = document.querySelectorAll('.section, .pain-card, .usp-card, .feature-card, .audience-card, .compare-col, .proof-card, .price-card, .outcome-pill');
   const io = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        // Add staggered delay for premium feel
-        const delay = entry.target.dataset.revealDelay || 0;
-        setTimeout(() => {
-          entry.target.classList.add('reveal');
-        }, delay);
+        const delay = prefersReducedMotion ? 0 : (entry.target.dataset.revealDelay || 0);
+        setTimeout(() => entry.target.classList.add('reveal'), delay);
         if (entry.target.classList.contains('proof-card')) animateCounter(entry.target);
       }
     });
-  }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-  
-  // Add staggered delays to cards
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
   document.querySelectorAll('.usp-card, .feature-card, .pain-card').forEach((el, i) => {
-    el.dataset.revealDelay = (i % 4) * 100;
+    el.dataset.revealDelay = (i % 4) * 80;
   });
-  
   revealTargets.forEach(el => io.observe(el));
 
-  // Animated counters
   function animateCounter(card) {
     const numEl = card.querySelector('.proof-num');
     if (!numEl || numEl.dataset.done) return;
     numEl.dataset.done = '1';
     const target = parseFloat(numEl.dataset.count);
     const isDecimal = target % 1 !== 0;
-    let cur = 0;
+    if (prefersReducedMotion) {
+      numEl.textContent = isDecimal ? target.toFixed(1) : target.toLocaleString() + (target >= 30 ? '+' : '');
+      return;
+    }
     const duration = 1400;
     const start = performance.now();
     function step(now) {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
-      cur = target * eased;
+      const cur = target * eased;
       numEl.textContent = isDecimal ? cur.toFixed(1) : Math.round(cur).toLocaleString() + (target >= 30 && target < 1000 ? '+' : (target >= 1000 ? '+' : ''));
       if (t < 1) requestAnimationFrame(step);
       else numEl.textContent = isDecimal ? target.toFixed(1) : target.toLocaleString() + (target >= 30 ? '+' : '');
@@ -105,14 +175,14 @@ export function initUI() {
   // Accordion
   document.querySelectorAll('.acc-item').forEach(item => {
     const head = item.querySelector('.acc-head');
-    head.addEventListener('click', () => {
+    head?.addEventListener('click', () => {
       const wasOpen = item.classList.contains('open');
       document.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
       if (!wasOpen) item.classList.add('open');
     });
   });
 
-  // Timeline steps
+  // Timeline
   const timelineSteps = document.querySelectorAll('.timeline-step');
   const timelineFill = document.querySelector('.timeline-line-fill');
   function updateTimeline() {
@@ -127,11 +197,10 @@ export function initUI() {
       }
     });
     if (timelineFill && timelineSteps.length) {
-      const pct = (activeCount / timelineSteps.length) * 100;
-      timelineFill.style.height = pct + '%';
+      timelineFill.style.height = (activeCount / timelineSteps.length) * 100 + '%';
     }
   }
-  window.addEventListener('scroll', updateTimeline);
+  window.addEventListener('scroll', updateTimeline, { passive: true });
   updateTimeline();
 
   // Pricing toggle
@@ -149,5 +218,5 @@ export function initUI() {
     });
   });
 
-  return {};
+  return callbacks;
 }

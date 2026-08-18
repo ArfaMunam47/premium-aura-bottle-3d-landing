@@ -2,139 +2,101 @@ import * as THREE from 'three';
 import { initScene } from './scene.js';
 import { createScrollStory } from './scrollStory.js';
 import { initUI } from './ui.js';
+import { runIntroSequence } from './introSequence.js';
 
-// Hide the loader first so the page never gets stuck on the AURA screen.
-initUI();
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ui = initUI({ prefersReducedMotion });
 
-// Wait for DOM to be fully ready before initializing 3D
 let ctx;
 let has3DError = false;
 
 function init3D() {
+  if (ctx || has3DError) return;
+
   const canvas = document.getElementById('bg-canvas');
-  
-  // Ensure canvas exists and is visible
   if (!canvas) {
-    console.error('❌ Canvas element not found!');
     has3DError = true;
     return;
   }
-  
-  console.log('✅ Canvas element found');
-  console.log('  - Canvas size:', canvas.width, 'x', canvas.height);
-  console.log('  - Canvas display:', window.getComputedStyle(canvas).display);
-  console.log('  - Canvas visibility:', window.getComputedStyle(canvas).visibility);
-  
+
   try {
-    console.log('🎬 Initializing 3D scene...');
-    console.log('  - Browser:', navigator.userAgent);
-    console.log('  - WebGL support:', !!document.createElement('canvas').getContext('webgl2') || !!document.createElement('canvas').getContext('webgl'));
-    
-    // Ensure canvas is properly sized before initialization
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    console.log('✅ Canvas pre-sized:', canvas.width, 'x', canvas.height);
-    
-    ctx = initScene(canvas);
-    console.log('✅ 3D scene initialized successfully');
-    console.log('  - Context returned:', !!ctx);
+    ctx = initScene(canvas, { prefersReducedMotion });
   } catch (err) {
     has3DError = true;
-    console.error('❌ 3D init failed:', err);
-    console.error('Error details:', err.message, err.stack);
-    // Keep the page usable even if WebGL/3D fails.
-    const loader = document.getElementById('loader');
-    if (loader) loader.classList.add('hidden');
-    
-    // Show a message to the user
-    const root = document.getElementById('root');
-    if (root) {
-      const warning = document.createElement('div');
-      warning.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(255,100,100,0.9);color:white;padding:15px 25px;border-radius:10px;z-index:99999;font-family:Arial,sans-serif;max-width:90%;text-align:center;';
-      warning.textContent = '3D features require WebGL. Please ensure hardware acceleration is enabled in your browser settings.';
-      document.body.appendChild(warning);
-    }
-  }
-
-  if (!ctx) {
-    console.error('❌ Context is null - 3D scene not initialized');
-    console.error('  - has3DError:', has3DError);
+    console.error('3D init failed:', err);
+    document.getElementById('loader')?.classList.add('hidden');
+    showWebGLWarning();
     return;
   }
-  
-  console.log('✅ Starting animation loop setup...');
-  const { scene, camera, renderer, controls, bottle, parts, explodeOffsets, materials, particles, crystals, lights } = ctx;
 
-  // Showcase interaction state
+  const {
+    scene, camera, renderer, controls, bottle, parts, explodeOffsets,
+    materials, particles, crystals, platform, lights, packaging, contactShadow
+  } = ctx;
+
   let showcaseMode = false;
   let exploded = false;
   let capOpen = false;
   const clock = new THREE.Clock();
+
+  const liquidSurface = bottle.getObjectByName('liquidSurface');
 
   ctx.onShowcaseToggle = (active) => {
     if (active === showcaseMode) return;
     showcaseMode = active;
     controls.enabled = active;
     ctx.userInteractingBottle = active;
+    canvas.classList.toggle('interactive', active);
     if (active) {
-      controls.target.copy(bottle.position).add(new THREE.Vector3(0, 1.2, 0));
+      controls.target.set(0, 1.35, 0);
     }
   };
 
   const story = createScrollStory(ctx);
 
-  // Color swatches
   document.querySelectorAll('.swatch').forEach(sw => {
     sw.addEventListener('click', () => {
       document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
       sw.classList.add('active');
-      const color = sw.dataset.color;
-      materials.steelMat.color.set(color);
+      materials.steelMat.color.set(sw.dataset.color);
     });
   });
 
-  // Explode / reassemble
   const btnExplode = document.getElementById('btn-explode');
-  btnExplode.addEventListener('click', () => {
+  const btnCap = document.getElementById('btn-cap');
+  const btnReset = document.getElementById('btn-reset');
+
+  btnExplode?.addEventListener('click', () => {
     exploded = !exploded;
     btnExplode.textContent = exploded ? 'Reassemble' : 'Exploded View';
   });
-
-  // Cap open/close
-  const btnCap = document.getElementById('btn-cap');
-  btnCap.addEventListener('click', () => {
+  btnCap?.addEventListener('click', () => {
     capOpen = !capOpen;
     btnCap.textContent = capOpen ? 'Close Cap' : 'Open Cap';
   });
-
-  // Reset
-  document.getElementById('btn-reset').addEventListener('click', () => {
+  btnReset?.addEventListener('click', () => {
     exploded = false;
     capOpen = false;
     btnExplode.textContent = 'Exploded View';
     btnCap.textContent = 'Open Cap';
     document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-    document.querySelector('.swatch[data-color="#e8ecef"]').classList.add('active');
+    document.querySelector('.swatch[data-color="#e8ecef"]')?.classList.add('active');
     materials.steelMat.color.set('#e8ecef');
     controls.reset();
+    controls.target.set(0, 1.35, 0);
   });
 
   const capPart = parts.find(p => p.name === 'bottleCap');
   const capRest = capPart.userData.restPos.clone();
 
-  function updateExplode(dt) {
+  function updateExplode() {
     parts.forEach(part => {
       const rest = part.userData.restPos;
       const offset = explodeOffsets[part.name] || new THREE.Vector3();
       const targetLocal = exploded ? rest.clone().add(offset) : rest.clone();
-      if (part.name === 'bottleCap') {
-        // handled separately for open/close
-        return;
-      }
+      if (part.name === 'bottleCap') return;
       part.position.lerp(targetLocal, 0.08);
     });
-
-    // Cap: open = lift up + rotate, exploded overrides further up
     let capTarget = capRest.clone();
     if (capOpen) capTarget.y += 0.9;
     if (exploded) capTarget = capRest.clone().add(explodeOffsets.bottleCap);
@@ -142,118 +104,113 @@ function init3D() {
     capPart.rotation.y += ((capOpen ? Math.PI * 0.4 : 0) - capPart.rotation.y) * 0.09;
   }
 
-  // Mouse parallax tilt (subtle) when not in showcase mode
-  let mouseX = 0, mouseY = 0;
+  let mouseX = 0;
+  let mouseY = 0;
+  let smoothMouseX = 0;
+  let smoothMouseY = 0;
+
   window.addEventListener('mousemove', (e) => {
     mouseX = (e.clientX / window.innerWidth) * 2 - 1;
     mouseY = (e.clientY / window.innerHeight) * 2 - 1;
-  });
+  }, { passive: true });
+
+  const posAttr = particles.geometry.attributes.position;
+  const base = particles.userData.basePositions;
+  let frameCount = 0;
+  let envRevealed = false;
 
   function animate() {
     if (has3DError) return;
-    
-    const dt = clock.getDelta();
+
     const t = clock.elapsedTime;
+    smoothMouseX += (mouseX - smoothMouseX) * 0.04;
+    smoothMouseY += (mouseY - smoothMouseY) * 0.04;
 
-    story.update();
-    updateExplode(dt);
+    const storyState = story.update() || {};
+    updateExplode();
 
-    if (!showcaseMode) {
-      // gentle idle bob + breathing + mouse tilt
-      bottle.position.y += Math.sin(t * 0.8) * 0.0015;
-      bottle.rotation.z += (Math.sin(t * 0.5) * 0.03 - bottle.rotation.z) * 0.03;
-      bottle.rotation.x += (mouseY * 0.08 - bottle.rotation.x) * 0.03;
-    } else {
+    const introDone = ctx.introComplete;
+    const phase = storyState.phase || 'anticipation';
+    const pastReveal = ['discover', 'showcase', 'experience', 'desire', 'action'].includes(phase);
+
+    if (introDone && pastReveal && !envRevealed) {
+      envRevealed = true;
+      platform.visible = true;
+      if (contactShadow) contactShadow.visible = true;
+      crystals.visible = true;
+      particles.visible = true;
+    }
+
+    if (showcaseMode) {
       controls.update();
+    } else if (introDone && !prefersReducedMotion && !ctx.detailFocus) {
+      const tilt = ctx.discoveryActive ? 0.018 : 0.008;
+      bottle.rotation.x += (smoothMouseY * tilt - bottle.rotation.x) * 0.03;
+      bottle.rotation.z += (-smoothMouseX * tilt * 0.4 - bottle.rotation.z) * 0.03;
     }
 
-    // Ring pulse (enhanced)
+    if (lights.revealLight && introDone) {
+      lights.revealLight.position.x += (smoothMouseX * 0.8 - lights.revealLight.position.x) * 0.03;
+      lights.revealLight.position.z += ((3.2 + smoothMouseY * 0.3) - lights.revealLight.position.z) * 0.03;
+    }
+
+    if (liquidSurface && introDone && !prefersReducedMotion) {
+      const baseY = liquidSurface.userData.baseY;
+      liquidSurface.position.y = baseY + Math.sin(t * 0.6) * 0.004;
+      liquidSurface.rotation.z = Math.sin(t * 0.4) * 0.008;
+    }
+
     const ring = bottle.getObjectByName('bottleRing');
-    if (ring) {
-      const pulse = 0.5 + Math.sin(t * 2) * 0.3;
-      ring.material.emissiveIntensity = 0.4 + pulse * 0.5;
+    if (ring && introDone && !prefersReducedMotion) {
+      ring.material.emissiveIntensity = 0.22 + Math.sin(t * 0.8) * 0.08;
     }
 
-    // Particles gentle drift (enhanced)
-    particles.rotation.y += 0.0006;
-    const posAttr = particles.geometry.attributes.position;
-    const base = particles.userData.basePositions;
-    for (let i = 0; i < posAttr.count; i++) {
-      posAttr.array[i * 3 + 1] = base[i * 3 + 1] + Math.sin(t * 0.6 + i) * 0.15;
+    if (introDone && pastReveal && !prefersReducedMotion && frameCount % 4 === 0) {
+      particles.rotation.y += 0.0002;
+      for (let i = 0; i < posAttr.count; i++) {
+        posAttr.array[i * 3 + 1] = base[i * 3 + 1] + Math.sin(t * 0.4 + i) * 0.03;
+      }
+      posAttr.needsUpdate = true;
     }
-    posAttr.needsUpdate = true;
 
-    // Crystals float + rotate (enhanced)
-    crystals.children.forEach(c => {
-      c.rotation.x += 0.003;
-      c.rotation.y += 0.004;
-      c.position.y = c.userData.baseY + Math.sin(t * c.userData.floatSpeed + c.userData.floatOffset) * 0.4;
-    });
-
-    // Premium lighting animations
-    lights.blueRim.intensity = 5 + Math.sin(t * 0.7) * 1.5;
-    lights.purpleRim.intensity = 5 + Math.cos(t * 0.6) * 1.5;
-    
-    // Animate new accent lights
-    if (lights.topLight) {
-      lights.topLight.intensity = 2 + Math.sin(t * 0.8) * 0.5;
-    }
-    if (lights.bottomLight) {
-      lights.bottomLight.intensity = 1.5 + Math.cos(t * 0.9) * 0.4;
+    if (introDone && !prefersReducedMotion && frameCount % 5 === 0) {
+      if (lights.blueRim) lights.blueRim.intensity += (3.0 + Math.sin(t * 0.35) * 0.25 - lights.blueRim.intensity) * 0.04;
+      if (lights.purpleRim) lights.purpleRim.intensity += (2.2 + Math.cos(t * 0.3) * 0.2 - lights.purpleRim.intensity) * 0.04;
     }
 
     renderer.render(scene, camera);
-    
-    // Log FPS every 60 frames
-    if (Math.floor(t * 60) % 60 === 0 && ctx && ctx.isFirefox) {
-      console.log('🎬 Rendering... FPS:', Math.round(1 / dt));
-    }
+    frameCount++;
   }
-  
-  if (!has3DError && renderer) {
-    console.log('🚀 Starting animation loop...');
-    
-    // Use requestAnimationFrame fallback for better compatibility
-    if (renderer.setAnimationLoop) {
-      renderer.setAnimationLoop(animate);
-      console.log('✅ Animation loop started via setAnimationLoop');
-    } else {
-      // Fallback for older browsers
-      function fallbackLoop() {
-        if (has3DError) return;
-        animate();
-        requestAnimationFrame(fallbackLoop);
-      }
-      fallbackLoop();
-      console.log('✅ Animation loop started via requestAnimationFrame fallback');
-    }
-    
-    // Verify animation is running
-    setTimeout(() => {
-      console.log('🔍 Animation loop health check...');
-      console.log('  - Renderer info:', renderer.info.render);
-      console.log('  - Scene children:', scene.children.length);
-      console.log('  - Animation running:', !has3DError);
-    }, 2000);
+
+  if (renderer.setAnimationLoop) {
+    renderer.setAnimationLoop(animate);
   } else {
-    console.error('❌ Cannot start animation loop - renderer or context missing');
-    console.error('  - has3DError:', has3DError);
-    console.error('  - renderer:', !!renderer);
+    function fallbackLoop() {
+      animate();
+      requestAnimationFrame(fallbackLoop);
+    }
+    fallbackLoop();
   }
+
+  ui.onLoaderReady?.();
+  ctx.prefersReducedMotion = prefersReducedMotion;
+  runIntroSequence(ctx, () => ui.onIntroComplete?.());
 }
 
-// Initialize when DOM is ready
+function showWebGLWarning() {
+  const warning = document.createElement('div');
+  warning.className = 'webgl-warning';
+  warning.setAttribute('role', 'alert');
+  warning.textContent = '3D features require WebGL. Please enable hardware acceleration in your browser settings.';
+  document.body.appendChild(warning);
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init3D);
 } else {
-  // DOM already loaded
   init3D();
 }
 
-// Also initialize on window load as backup
 window.addEventListener('load', () => {
-  if (!ctx && !has3DError) {
-    console.log('🔄 Retrying 3D initialization on window load...');
-    init3D();
-  }
+  if (!ctx && !has3DError) init3D();
 });
