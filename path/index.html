@@ -3,438 +3,333 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="AURA Bottle — A premium smart hydration experience. UV-C self-cleaning, AI tracking, aerospace-grade steel." />
-  <meta name="theme-color" content="#0a0b0e" />
-  <title>AURA Bottle — Premium Smart Hydration</title>
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
-  <link rel="apple-touch-icon" href="../favicon.svg" />
+  <meta name="description" content="AURA — a single, hand-finished glass vessel. Pure form. Refined flow." />
+  <meta name="theme-color" content="#0b0b0c" />
+  <title>AURA — Pure Form. Refined Flow.</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="firefox-fixes.css">
-  <script>
-    // Safety net only — main intro is handled by introSequence.js
-    setTimeout(function () {
-      var l = document.getElementById('loader');
-      if (l && !document.body.classList.contains('intro-complete')) l.classList.add('hidden');
-    }, 6000);
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
-<div id="loader">
-  <div class="loader-inner">
-    <div class="loader-box">
-      <div class="loader-lid loader-lid--left"></div>
-      <div class="loader-lid loader-lid--right"></div>
-      <div class="loader-box-base"></div>
-    </div>
-    <div class="loader-text">AURA</div>
-    <div class="loader-sub">Unveiling</div>
-    <div class="loader-bar"><div class="loader-bar-fill"></div></div>
-  </div>
+<div id="loader" role="status" aria-live="polite">
+  <div class="loader-mark">AURA</div>
+  <div class="loader-line"><div class="loader-line-fill" id="loader-fill"></div></div>
 </div>
 
-<div id="cursor-glow"></div>
-<div id="cursor-dot"></div>
+<a class="skip-link" href="#shop">Skip to shop</a>
 
-<canvas id="bg-canvas"></canvas>
-
-<div id="root">
-
-  <nav id="navbar">
-    <div class="nav-inner">
-      <div class="nav-logo">AURA</div>
-      <button class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false">
-        <span></span><span></span><span></span>
+<!-- ============================== NAV ============================== -->
+<header id="nav">
+  <div class="nav-inner">
+    <a href="#hero" class="nav-mark">AURA</a>
+    <nav class="nav-links" id="nav-links" aria-label="Primary">
+      <a href="#shop">Collection</a>
+      <a href="#details">Design</a>
+      <a href="#philosophy">Story</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="nav-bag" id="bag-toggle" aria-haspopup="dialog" aria-controls="cart-drawer" aria-label="Open bag">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <span class="bag-count" id="bag-count" hidden>0</span>
       </button>
-      <div class="nav-links">
-        <a href="#showcase">Product</a>
-        <a href="#features">Features</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#faq">FAQ</a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div id="mobile-menu" class="mobile-menu">
+  <a href="#shop">Collection</a>
+  <a href="#details">Design</a>
+  <a href="#philosophy">Story</a>
+</div>
+
+<main id="root">
+
+  <!-- ============================== HERO ============================== -->
+  <section id="hero" class="hero">
+    <div class="hero-media">
+      <video
+        id="hero-video"
+        class="hero-video"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        poster="/assets/aura-hero-poster.jpg"
+      >
+        <source src="/assets/aura-hero.mp4" type="video/mp4" />
+      </video>
+      <img class="hero-fallback" id="hero-fallback" src="/assets/aura-hero-poster.jpg" alt="" hidden />
+      <div class="hero-scrim"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">AURA</div>
+      <h1 class="hero-title">Pure Form.<br/>Refined Flow.</h1>
+      <p class="hero-sub">A single, hand-finished vessel — designed to disappear into daily ritual.</p>
+      <a href="#shop" class="btn btn-primary">Explore AURA</a>
+    </div>
+    <div class="hero-scroll-cue" aria-hidden="true">
+      <span>Scroll</span>
+      <div class="hero-scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- ============================== PRODUCT REVEAL ============================== -->
+  <section id="reveal" class="reveal">
+    <div class="reveal-media reveal-in">
+      <img src="/assets/aura-bottle.jpg" alt="AURA glass bottle, front view, on a dark surface" />
+    </div>
+    <div class="reveal-copy reveal-in">
+      <div class="eyebrow">01 — Object</div>
+      <h2 class="display-title">One object.<br/>No excess.</h2>
+      <p class="body-text">Every line of AURA was drawn, then removed, then drawn again — until nothing remained but the shape water wants to take.</p>
+    </div>
+  </section>
+
+  <!-- ============================== SHOWCASE / PSEUDO-3D ============================== -->
+  <section id="showcase" class="showcase">
+    <div class="section-head">
+      <div class="eyebrow center">02 — Meet AURA</div>
+      <h2 class="display-title center">Meet AURA</h2>
+      <p class="body-text center">Move your cursor across the object. Light behaves the way it would on the object itself.</p>
+    </div>
+
+    <div class="showcase-stage" id="showcase-stage">
+      <div class="showcase-tilt" id="showcase-tilt">
+        <img src="/assets/aura-bottle.jpg" alt="AURA glass bottle, interactive preview" id="showcase-img" />
+        <div class="showcase-sheen" id="showcase-sheen" aria-hidden="true"></div>
+        <button class="pin pin-cap" data-caption="Knurled aluminum cap, hand-torqued to seal." style="top:17%; left:50%;" aria-label="Cap detail"></button>
+        <button class="pin pin-neck" data-caption="Blown-glass neck, tapered by hand." style="top:34%; left:49%;" aria-label="Neck detail"></button>
+        <button class="pin pin-base" data-caption="Weighted base for a low center of gravity." style="top:87%; left:50%;" aria-label="Base detail"></button>
       </div>
-      <button class="btn btn-nav magnetic" data-scroll-to="#pricing">Get Yours</button>
+      <div class="pin-caption" id="pin-caption" hidden></div>
     </div>
-  </nav>
 
-<nav id="story-progress" aria-label="Experience progress" style="--story-pct: 12%">
-  <div class="story-rail"><div class="story-rail-fill"></div></div>
-  <button class="story-dot active" data-phase="anticipation" data-scroll-to="#intro" aria-label="Introduction"></button>
-  <button class="story-dot" data-phase="unwrap" data-scroll-to="#unwrap" aria-label="Unveiling"></button>
-  <button class="story-dot" data-phase="reveal" data-scroll-to="#reveal" aria-label="Reveal"></button>
-  <button class="story-dot" data-phase="discover" data-scroll-to="#discover" aria-label="Discovery"></button>
-  <button class="story-dot" data-phase="showcase" data-scroll-to="#showcase" aria-label="Showcase"></button>
-  <button class="story-dot" data-phase="experience" data-scroll-to="#promise" aria-label="Experience"></button>
-  <button class="story-dot" data-phase="desire" data-scroll-to="#pricing" aria-label="Desire"></button>
-  <button class="story-dot" data-phase="action" data-scroll-to="#final" aria-label="Action"></button>
-</nav>
-
-  <!-- ACT I: INTRODUCTION -->
-  <section id="intro" class="section story-section" data-story-phase="anticipation">
-    <div class="story-content story-content--minimal">
-      <div class="story-phase-label">01 — Introduction</div>
-      <p class="story-whisper">Something remarkable awaits.</p>
-    </div>
-    <div class="scroll-hint"><span>Scroll to unveil</span><div class="scroll-line"></div></div>
+    <p class="showcase-hint">Drag or move to tilt &middot; hover the marks for detail</p>
   </section>
 
-  <!-- ACT I: UNWRAPPING -->
-  <section id="unwrap" class="section story-section" data-story-phase="unwrap">
-    <div class="story-content story-content--side">
-      <div class="story-phase-label">02 — Unveiling</div>
-      <h2 class="story-title">Crafted to be opened.</h2>
-      <p class="story-text">Every layer reveals precision engineering — from packaging to the final form.</p>
+  <!-- ============================== MATERIAL DETAILS ============================== -->
+  <section id="details" class="details">
+    <div class="section-head">
+      <div class="eyebrow center">03 — Design</div>
+      <h2 class="display-title center">Considered, part by part.</h2>
     </div>
-  </section>
-
-  <!-- ACT I: REVEAL -->
-  <section id="reveal" class="section story-section" data-story-phase="reveal">
-    <div class="hero-content story-content story-content--center">
-      <div class="eyebrow">Introducing AURA Bottle</div>
-      <h1 class="hero-title">Hydration,<br/>Reinvented.</h1>
-      <p class="hero-sub">Aerospace-grade steel. UV-C self-cleaning. AI hydration intelligence — unified in one refined object.</p>
-      <div class="hero-ctas">
-        <button class="btn btn-primary magnetic" data-scroll-to="#pricing">Get Yours Today</button>
-        <button class="btn btn-secondary magnetic" data-scroll-to="#showcase"><span class="play-ico">&#9654;</span> Explore Details</button>
-      </div>
-    </div>
-    <div class="hero-stats">
-      <div class="hero-stat" data-stat="0"><span class="stat-num">99.9%</span><span class="stat-label">Self Sterilization</span></div>
-      <div class="hero-stat" data-stat="1"><span class="stat-num">30-Day</span><span class="stat-label">Battery Life</span></div>
-      <div class="hero-stat" data-stat="2"><span class="stat-num">Smart</span><span class="stat-label">Hydration Tracking</span></div>
-      <div class="hero-stat" data-stat="3"><span class="stat-num">App</span><span class="stat-label">Connected</span></div>
-    </div>
-  </section>
-
-  <!-- ACT I: DISCOVERY -->
-  <section id="discover" class="section story-section" data-story-phase="discover">
-    <div class="story-content story-content--side story-content--right">
-      <div class="story-phase-label">04 — Discovery</div>
-      <h2 class="story-title">Feel the weight.<br/>See the detail.</h2>
-      <p class="story-text">Every surface, seam, and reflection tells a story of deliberate craftsmanship.</p>
-      <p class="discover-hint" aria-hidden="true">Move to explore the form</p>
-    </div>
-  </section>
-
-  <!-- PAIN -->
-  <section id="pain" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">We get it</div>
-      <h2 class="section-title center">Hydration is harder<br/>than it should be.</h2>
-      <div class="pain-grid">
-        <div class="pain-card"><div class="pain-emoji">💧</div><p>"I forget to drink water."</p></div>
-        <div class="pain-card"><div class="pain-emoji">🤢</div><p>"My bottle smells bad."</p></div>
-        <div class="pain-card"><div class="pain-emoji">❓</div><p>"I never know if I'm hydrated."</p></div>
-        <div class="pain-card"><div class="pain-emoji">⏰</div><p>"I'm always busy."</p></div>
-        <div class="pain-card"><div class="pain-emoji">🎒</div><p>"I carry a bottle but never use it."</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- BIG PROMISE -->
-  <section id="promise" class="section story-section" data-story-phase="experience">
-    <div class="section-inner center-col">
-      <div class="eyebrow center">The Big Promise</div>
-      <h2 class="section-title center huge">One Smart Bottle.<br/><span class="grad-text">Every Hydration Problem Solved.</span></h2>
-      <p class="section-p center">AURA removes the need to remember hydration. It cleans itself automatically with UV-C light, tracks every sip, and delivers intelligent reminders exactly when your body needs them.</p>
-    </div>
-  </section>
-
-  <!-- USP -->
-  <section id="usp" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">Why AURA</div>
-      <h2 class="section-title center">Engineered to be different.</h2>
-      <div class="usp-grid">
-        <div class="usp-card" data-glow="blue"><div class="usp-ico">🧠</div><h3>AI Hydration Reminders</h3><p>Learns your routine and nudges you at the perfect moment.</p></div>
-        <div class="usp-card" data-glow="purple"><div class="usp-ico">☀️</div><h3>UV-C Self-Cleaning</h3><p>Sterilizes 99.9% of bacteria automatically, every few hours.</p></div>
-        <div class="usp-card" data-glow="cyan"><div class="usp-ico">❄️</div><h3>Temperature Retention</h3><p>Cold for 24 hours. Hot for 12. Always just right.</p></div>
-        <div class="usp-card" data-glow="green"><div class="usp-ico">🔒</div><h3>Leak-Proof Design</h3><p>Precision-sealed cap built for gym bags and backpacks.</p></div>
-        <div class="usp-card" data-glow="orange"><div class="usp-ico">📱</div><h3>Mobile App Integration</h3><p>Live sync of intake, reminders, and cleaning cycles.</p></div>
-        <div class="usp-card" data-glow="pink"><div class="usp-ico">✨</div><h3>Premium Design</h3><p>Aerospace-grade steel with a holographic finish.</p></div>
-        <div class="usp-card" data-glow="gold"><div class="usp-ico">🌿</div><h3>Eco-Friendly</h3><p>One AURA replaces thousands of plastic bottles.</p></div>
-        <div class="usp-card" data-glow="blue"><div class="usp-ico">🔋</div><h3>Long Battery Life</h3><p>Up to 30 days on a single charge.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SHOWCASE -->
-  <section id="showcase" class="section story-section" data-story-phase="showcase">
-    <div class="section-inner">
-      <div class="story-phase-label center">05 — Showcase</div>
-      <h2 class="section-title center">Explore every detail.</h2>
-      <p class="section-p center">Interact directly with the product. Rotate, customize, and inspect each component.</p>
-      <div class="showcase-controls">
-        <div class="color-swatches">
-          <button class="swatch active" data-color="#e8ecef" style="--sw:#e8ecef" aria-label="Silver color"></button>
-          <button class="swatch" data-color="#6ee7ff" style="--sw:#6ee7ff" aria-label="Ice blue color"></button>
-          <button class="swatch" data-color="#c084fc" style="--sw:#c084fc" aria-label="Lavender color"></button>
-          <button class="swatch" data-color="#34d399" style="--sw:#34d399" aria-label="Mint color"></button>
-          <button class="swatch" data-color="#fb923c" style="--sw:#fb923c" aria-label="Amber color"></button>
+    <div class="details-grid">
+      <figure class="detail-card">
+        <div class="detail-crop">
+          <img src="/assets/detail-cap.jpg" alt="Close-up of the AURA cap" />
         </div>
-        <div class="showcase-buttons">
-          <button id="btn-explode" class="btn btn-ghost magnetic">Exploded View</button>
-          <button id="btn-cap" class="btn btn-ghost magnetic">Open Cap</button>
-          <button id="btn-reset" class="btn btn-ghost magnetic">Reset</button>
+        <figcaption>
+          <h3>The Closure</h3>
+          <p>A knurled aluminum cap, machined for grip and finished by hand.</p>
+        </figcaption>
+      </figure>
+      <figure class="detail-card">
+        <div class="detail-crop">
+          <img src="/assets/detail-label.jpg" alt="Close-up of the AURA glass etching" />
         </div>
-      </div>
-      <p class="showcase-hint">Drag to rotate &middot; Scroll to zoom</p>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS -->
-  <section id="how" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">How It Works</div>
-      <h2 class="section-title center">Effortless by design.</h2>
-      <div class="timeline">
-        <div class="timeline-line"><div class="timeline-line-fill"></div></div>
-        <div class="timeline-step" data-step="1"><div class="step-num">01</div><h3>Fill your bottle</h3><p>One fill sets everything in motion.</p></div>
-        <div class="timeline-step" data-step="2"><div class="step-num">02</div><h3>AI tracks hydration</h3><p>Sensors measure every sip in real time.</p></div>
-        <div class="timeline-step" data-step="3"><div class="step-num">03</div><h3>Smart reminders</h3><p>Gentle nudges arrive exactly when needed.</p></div>
-        <div class="timeline-step" data-step="4"><div class="step-num">04</div><h3>Auto sterilization</h3><p>UV-C light cleans the interior automatically.</p></div>
-        <div class="timeline-step" data-step="5"><div class="step-num">05</div><h3>Stay hydrated</h3><p>Effortlessly, every single day.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section id="features" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">Features</div>
-      <h2 class="section-title center">Everything you need. Nothing you don't.</h2>
-      <div class="features-grid">
-        <div class="feature-card"><div class="feature-ico blue">💧</div><h4>Smart Hydration</h4></div>
-        <div class="feature-card"><div class="feature-ico purple">☀️</div><h4>UV Cleaning</h4></div>
-        <div class="feature-card"><div class="feature-ico cyan">⚙️</div><h4>Premium Steel</h4></div>
-        <div class="feature-card"><div class="feature-ico green">🧊</div><h4>24-Hour Cold</h4></div>
-        <div class="feature-card"><div class="feature-ico orange">🔥</div><h4>12-Hour Hot</h4></div>
-        <div class="feature-card"><div class="feature-ico pink">📶</div><h4>Bluetooth App</h4></div>
-        <div class="feature-card"><div class="feature-ico gold">🔋</div><h4>Battery Indicator</h4></div>
-        <div class="feature-card"><div class="feature-ico blue">🔒</div><h4>Leak Proof</h4></div>
-        <div class="feature-card"><div class="feature-ico purple">🧳</div><h4>Travel Friendly</h4></div>
-        <div class="feature-card"><div class="feature-ico cyan">🔊</div><h4>Voice Notifications</h4></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- COMPARISON -->
-  <section id="compare" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">The Difference</div>
-      <h2 class="section-title center">Frustration, meet its opposite.</h2>
-      <div class="compare-grid">
-        <div class="compare-col without">
-          <h3>Without AURA</h3>
-          <ul>
-            <li>Forget drinking</li>
-            <li>Dirty bottles</li>
-            <li>Plastic waste</li>
-            <li>No reminders</li>
-            <li>No tracking</li>
-          </ul>
+        <figcaption>
+          <h3>The Mark</h3>
+          <p>The AURA wordmark, etched directly into the glass — it will not fade or peel.</p>
+        </figcaption>
+      </figure>
+      <figure class="detail-card">
+        <div class="detail-crop">
+          <img src="/assets/detail-base.jpg" alt="Close-up of the AURA base" />
         </div>
-        <div class="compare-vs">VS</div>
-        <div class="compare-col with">
-          <h3>With AURA</h3>
-          <ul>
-            <li>Healthy routine</li>
-            <li>Always clean</li>
-            <li>Hydrated</li>
-            <li>Eco-friendly</li>
-            <li>Smart reminders</li>
-            <li>Beautiful design</li>
-          </ul>
+        <figcaption>
+          <h3>The Base</h3>
+          <p>A wider, weighted foot — stable on a desk, a nightstand, a car door.</p>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================== PHILOSOPHY ============================== -->
+  <section id="philosophy" class="philosophy">
+    <div class="philosophy-inner">
+      <p class="philosophy-quote">
+        “We didn't set out to make a water bottle.<br/>
+        We set out to make an object worth keeping.”
+      </p>
+      <span class="philosophy-attr">— AURA Design Studio</span>
+    </div>
+  </section>
+
+  <!-- ============================== FEATURES ============================== -->
+  <section id="features" class="features">
+    <div class="features-inner">
+      <div class="feature-row">
+        <span class="feature-index">01</span>
+        <h3>Borosilicate Glass</h3>
+        <p>Hand-finished, thermal-shock resistant, entirely free of plastic taste.</p>
+      </div>
+      <div class="feature-row">
+        <span class="feature-index">02</span>
+        <h3>Hand-Finished Cap</h3>
+        <p>Precision-knurled aluminum, individually torqued and inspected.</p>
+      </div>
+      <div class="feature-row">
+        <span class="feature-index">03</span>
+        <h3>Made to Last</h3>
+        <p>Designed as a single object you keep, refill, and pass down — not replace.</p>
+      </div>
+      <div class="feature-row">
+        <span class="feature-index">04</span>
+        <h3>Timeless Form</h3>
+        <p>No trend-driven redesign. AURA looks the same today as it will in ten years.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== SHOP / PURCHASE ============================== -->
+  <section id="shop" class="shop">
+    <div class="shop-inner">
+      <div class="shop-media">
+        <img src="/assets/aura-bottle.jpg" alt="AURA glass bottle" id="shop-img" />
+      </div>
+      <div class="shop-panel">
+        <div class="eyebrow">AURA — The Original</div>
+        <h2 class="display-title">Pure Form.<br/>Refined Flow.</h2>
+        <p class="body-text">A single, hand-finished vessel in borosilicate glass, closed with a knurled aluminum cap.</p>
+
+        <div class="shop-price" id="shop-price">$68</div>
+
+        <div class="option-group">
+          <span class="option-label">Size</span>
+          <div class="option-row" id="size-options" role="radiogroup" aria-label="Size">
+            <button class="option-pill active" data-size="500" role="radio" aria-checked="true">500ml<span>Everyday</span></button>
+            <button class="option-pill" data-size="750" role="radio" aria-checked="false">750ml<span>Studio</span></button>
+            <button class="option-pill" data-size="1000" role="radio" aria-checked="false">1L<span>Reserve</span></button>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- SOCIAL PROOF -->
-  <section id="proof" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">Loved Worldwide</div>
-      <h2 class="section-title center">Trusted by thousands.</h2>
-      <div class="proof-grid">
-        <div class="proof-card"><div class="proof-num" data-count="4.9">0</div><div class="stars">★★★★★</div><p>Overall Rating</p></div>
-        <div class="proof-card"><div class="proof-num" data-count="50000">0</div><p>Happy Customers</p></div>
-        <div class="proof-card"><div class="proof-num" data-count="30">0</div><p>Countries Reached</p></div>
-        <div class="proof-card"><div class="proof-num" data-count="100">0</div><p>Athletes Trust AURA</p></div>
-      </div>
-      <div class="review-row">
-        <div class="review-card"><p>I haven't missed a hydration goal in three months.</p><span>— Maya R., Marathon Runner</span></div>
-        <div class="review-card"><p>The self-cleaning feature alone is worth it.</p><span>— Daniel K., Software Engineer</span></div>
-        <div class="review-card"><p>Recommended by my nutrition coach — now I get why.</p><span>— Priya S., Student</span></div>
-      </div>
-      <div class="review-row">
-        <div class="review-card"><p>My skin and energy have never felt better since I started using AURA.</p><span>— Liam T., Fitness Coach</span></div>
-        <div class="review-card"><p>The 24-hour cold retention is a game changer for my long shifts.</p><span>— Sofia M., Nurse</span></div>
-        <div class="review-card"><p>It tracks my hydration and reminds me at the perfect moments.</p><span>— Noah B., Entrepreneur</span></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ENDORSEMENTS -->
-  <section id="press" class="section small">
-    <div class="section-inner">
-      <div class="eyebrow center">Featured In</div>
-      <div class="press-row">
-        <div class="press-logo">TECH WEEKLY</div>
-        <div class="press-logo">FUTURE LIVING</div>
-        <div class="press-logo">SMART HOME MAG</div>
-        <div class="press-logo">INNOVATION AWARDS</div>
-        <div class="press-logo">HEALTH TODAY</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- AUDIENCE -->
-  <section id="audience" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">Who This Is For</div>
-      <h2 class="section-title center">Built for how you live.</h2>
-      <div class="audience-grid">
-        <div class="audience-card"><div class="aud-ico">💼</div><h4>Busy Professionals</h4></div>
-        <div class="audience-card"><div class="aud-ico">🎓</div><h4>Students</h4></div>
-        <div class="audience-card"><div class="aud-ico">🏋️</div><h4>Athletes</h4></div>
-        <div class="audience-card"><div class="aud-ico">✈️</div><h4>Travelers</h4></div>
-        <div class="audience-card"><div class="aud-ico">🎨</div><h4>Creators</h4></div>
-        <div class="audience-card"><div class="aud-ico">👶</div><h4>Parents</h4></div>
-        <div class="audience-card"><div class="aud-ico">💻</div><h4>Remote Workers</h4></div>
-        <div class="audience-card"><div class="aud-ico">🧘</div><h4>Wellness Seekers</h4></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- OUTCOMES -->
-  <section id="outcomes" class="section">
-    <div class="section-inner center-col">
-      <div class="eyebrow center">What You'll Walk Away With</div>
-      <h2 class="section-title center">A better version of your daily routine.</h2>
-      <div class="outcomes-grid">
-        <div class="outcome-pill">Better hydration habits</div>
-        <div class="outcome-pill">Healthier lifestyle</div>
-        <div class="outcome-pill">Cleaner water bottle</div>
-        <div class="outcome-pill">Less plastic waste</div>
-        <div class="outcome-pill">Peace of mind</div>
-        <div class="outcome-pill">More energy</div>
-        <div class="outcome-pill">Better productivity</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- PRICING -->
-  <section id="pricing" class="section story-section" data-story-phase="desire">
-    <div class="section-inner">
-      <div class="eyebrow center">Pricing</div>
-      <h2 class="section-title center">Choose your AURA.</h2>
-      <div class="pricing-toggle">
-        <button class="toggle-btn active" data-mode="onetime">One-Time Purchase</button>
-        <button class="toggle-btn" data-mode="monthly">Monthly Plan</button>
-      </div>
-      <div class="pricing-grid">
-        <div class="price-card">
-          <h3>Starter</h3>
-          <div class="price"><span class="price-amt" data-onetime="59" data-monthly="9">$59</span></div>
-          <ul>
-            <li>1 AURA Bottle</li>
-            <li>UV-C Self Cleaning</li>
-            <li>Basic App Access</li>
-            <li>1-Year Warranty</li>
-          </ul>
-          <button class="btn btn-ghost magnetic" data-scroll-to="#pricing">Choose Starter</button>
+        <div class="option-group">
+          <span class="option-label">Finish</span>
+          <div class="option-row swatch-row" id="finish-options" role="radiogroup" aria-label="Cap finish">
+            <button class="finish-swatch active" data-finish="onyx" style="--fc:#1c1c1e" role="radio" aria-checked="true" aria-label="Onyx"></button>
+            <button class="finish-swatch" data-finish="champagne" style="--fc:#c9a876" role="radio" aria-checked="false" aria-label="Champagne"></button>
+            <button class="finish-swatch" data-finish="graphite" style="--fc:#6b6b70" role="radio" aria-checked="false" aria-label="Graphite"></button>
+          </div>
         </div>
-        <div class="price-card featured">
-          <div class="badge">Best Value</div>
-          <h3>Pro</h3>
-          <div class="price"><span class="price-amt" data-onetime="89" data-monthly="15">$89</span></div>
-          <ul>
-            <li>1 AURA Bottle Pro</li>
-            <li>AI Hydration Coach</li>
-            <li>Full App + Voice Alerts</li>
-            <li>2-Year Warranty</li>
-            <li>Priority Support</li>
-          </ul>
-          <button class="btn btn-primary magnetic" data-scroll-to="#pricing">Choose Pro</button>
+
+        <div class="option-group">
+          <span class="option-label">Quantity</span>
+          <div class="qty-stepper" id="qty-stepper">
+            <button class="qty-btn" id="qty-minus" aria-label="Decrease quantity">–</button>
+            <span class="qty-value" id="qty-value">1</span>
+            <button class="qty-btn" id="qty-plus" aria-label="Increase quantity">+</button>
+          </div>
         </div>
-        <div class="price-card">
-          <h3>Family Pack</h3>
-          <div class="price"><span class="price-amt" data-onetime="219" data-monthly="35">$219</span></div>
-          <ul>
-            <li>3 AURA Bottles Pro</li>
-            <li>Shared Family App</li>
-            <li>Priority Shipping</li>
-            <li>2-Year Warranty</li>
-          </ul>
-          <button class="btn btn-ghost magnetic" data-scroll-to="#pricing">Choose Family</button>
-        </div>
+
+        <button class="btn btn-primary btn-add" id="add-to-cart">
+          <span>Add to Bag</span>
+        </button>
+        <p class="shop-note">Free shipping on every order. 30-day returns.</p>
       </div>
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section id="faq" class="section">
-    <div class="section-inner">
-      <div class="eyebrow center">FAQ</div>
-      <h2 class="section-title center">Good to know.</h2>
-      <div class="accordion">
-        <div class="acc-item"><button class="acc-head">How long does the battery last? <span>+</span></button><div class="acc-body"><p>Up to 30 days per charge under normal use, with fast USB-C charging.</p></div></div>
-        <div class="acc-item"><button class="acc-head">How does the self-cleaning work? <span>+</span></button><div class="acc-body"><p>A UV-C LED sterilizes the interior automatically every few hours, eliminating up to 99.9% of bacteria.</p></div></div>
-        <div class="acc-item"><button class="acc-head">What warranty is included? <span>+</span></button><div class="acc-body"><p>All AURA bottles include a 1 or 2-year warranty depending on the plan you choose.</p></div></div>
-        <div class="acc-item"><button class="acc-head">How fast is shipping? <span>+</span></button><div class="acc-body"><p>Orders ship within 2-3 business days with tracking, available in 30+ countries.</p></div></div>
-        <div class="acc-item"><button class="acc-head">Is it compatible with my phone? <span>+</span></button><div class="acc-body"><p>Yes — the AURA app works with both iOS and Android via Bluetooth.</p></div></div>
-        <div class="acc-item"><button class="acc-head">What is the return policy? <span>+</span></button><div class="acc-body"><p>30-day money-back guarantee, no questions asked.</p></div></div>
-        <div class="acc-item"><button class="acc-head">What materials are used? <span>+</span></button><div class="acc-body"><p>Aerospace-grade stainless steel with a food-safe interior coating.</p></div></div>
-        <div class="acc-item"><button class="acc-head">Is the UV-C light safe? <span>+</span></button><div class="acc-body"><p>Completely safe — the UV-C chamber is fully sealed and only activates when the cap is closed.</p></div></div>
-      </div>
+  <!-- ============================== STORY / CONCLUSION ============================== -->
+  <section id="story" class="story">
+    <img src="/assets/aura-hero-poster.jpg" alt="" class="story-bg" />
+    <div class="story-scrim"></div>
+    <div class="story-content">
+      <h2 class="display-title center light">An object,<br/>not an appliance.</h2>
+      <p class="body-text center light">AURA is built to be the last water bottle you buy.</p>
+      <a href="#shop" class="btn btn-secondary">Shop AURA</a>
     </div>
   </section>
 
-  <!-- FINAL CTA -->
-  <section id="final" class="section story-section" data-story-phase="action">
-    <div class="section-inner center-col">
-      <div class="story-phase-label center">08 — Your Move</div>
-      <h2 class="section-title center huge">Your Future Self Starts<br/>With One Better Habit.</h2>
-      <p class="section-p center">The complete AURA experience — designed, engineered, and ready for you.</p>
-      <div class="hero-ctas">
-        <button class="btn btn-primary magnetic" data-scroll-to="#pricing">Order Now</button>
-        <button class="btn btn-secondary magnetic" data-scroll-to="#showcase">Explore Again</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
+  <!-- ============================== FOOTER ============================== -->
   <footer id="footer">
     <div class="footer-inner">
-      <div class="footer-top">
-        <div class="footer-brand">
-          <div class="nav-logo">AURA</div>
-          <p>Hydration, reinvented for the way you live.</p>
-        </div>
-        <div class="footer-newsletter">
-          <p>Join the newsletter</p>
-          <form class="newsletter-input" aria-label="Newsletter signup">
-            <input type="email" placeholder="you@email.com" aria-label="Email address" required />
-            <button type="submit" class="btn btn-primary small magnetic">Subscribe</button>
-          </form>
-        </div>
-      </div>
+      <div class="footer-mark">AURA</div>
+      <form class="footer-newsletter" id="newsletter-form">
+        <label class="sr-only" for="newsletter-email">Email address</label>
+        <input id="newsletter-email" type="email" placeholder="Email address" required />
+        <button type="submit" class="btn btn-secondary small">Join</button>
+      </form>
       <div class="footer-links">
-        <div class="footer-col"><h5>Company</h5><a href="#">About</a><a href="#">Careers</a><a href="#">Press</a></div>
-        <div class="footer-col"><h5>Support</h5><a href="#">Contact</a><a href="#">Shipping</a><a href="#">Returns</a></div>
-        <div class="footer-col"><h5>Legal</h5><a href="#">Privacy</a><a href="#">Terms</a></div>
-        <div class="footer-col"><h5>Social</h5><a href="#">Instagram</a><a href="#">TikTok</a><a href="#">X</a></div>
+        <a href="#shop">Collection</a>
+        <a href="#details">Design</a>
+        <a href="#philosophy">Story</a>
       </div>
-      <div class="footer-bottom">
-        <span>&copy; 2026 AURA Bottle. All rights reserved.</span>
-      </div>
+      <div class="footer-bottom">&copy; 2026 AURA. All rights reserved.</div>
     </div>
   </footer>
 
-</div>
+</main>
 
-<script type="module" src="main.js"></script>
+<!-- ============================== CART DRAWER ============================== -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+
+<aside class="drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping bag" aria-hidden="true">
+  <div class="drawer-head">
+    <h2>Bag</h2>
+    <button class="drawer-close" id="cart-close" aria-label="Close bag">&times;</button>
+  </div>
+  <div class="drawer-body" id="cart-body">
+    <p class="cart-empty" id="cart-empty">Your bag is empty.</p>
+    <div class="cart-lines" id="cart-lines"></div>
+  </div>
+  <div class="drawer-foot" id="cart-foot" hidden>
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <span id="cart-subtotal-amt">$0</span>
+    </div>
+    <button class="btn btn-primary btn-full" id="checkout-open">Checkout</button>
+  </div>
+</aside>
+
+<!-- ============================== CHECKOUT DRAWER ============================== -->
+<aside class="drawer" id="checkout-drawer" role="dialog" aria-modal="true" aria-label="Checkout" aria-hidden="true">
+  <div class="drawer-head">
+    <h2>Checkout</h2>
+    <button class="drawer-close" id="checkout-close" aria-label="Close checkout">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <p class="checkout-demo-note">This is a demo checkout — no payment is processed and no order is actually placed.</p>
+    <form id="checkout-form" class="checkout-form">
+      <label>Full name<input type="text" name="name" required /></label>
+      <label>Email<input type="email" name="email" required /></label>
+      <label>Address<input type="text" name="address" required /></label>
+      <div class="checkout-row">
+        <label>City<input type="text" name="city" required /></label>
+        <label>Postal code<input type="text" name="zip" required /></label>
+      </div>
+      <label>Country
+        <select name="country" required>
+          <option value="">Select country</option>
+          <option>United States</option>
+          <option>United Kingdom</option>
+          <option>Canada</option>
+          <option>Australia</option>
+          <option>Pakistan</option>
+          <option>Other</option>
+        </select>
+      </label>
+      <div class="checkout-summary" id="checkout-summary"></div>
+      <button type="submit" class="btn btn-primary btn-full">Place Order</button>
+    </form>
+    <div class="checkout-success" id="checkout-success" hidden>
+      <div class="success-mark">&#10003;</div>
+      <h3>Order received</h3>
+      <p>Order <strong id="order-number"></strong> — thank you for choosing AURA.</p>
+      <p class="checkout-demo-note">(Demo only — nothing was charged or shipped.)</p>
+      <button class="btn btn-secondary" id="checkout-done">Continue browsing</button>
+    </div>
+  </div>
+</aside>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="./main.js"></script>
 </body>
 </html>

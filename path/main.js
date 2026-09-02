@@ -1,216 +1,470 @@
-import * as THREE from 'three';
-import { initScene } from './scene.js';
-import { createScrollStory } from './scrollStory.js';
-import { initUI } from './ui.js';
-import { runIntroSequence } from './introSequence.js';
+import { addToCart, updateQty, removeFromCart, onCartChange, getState, clearCart, formatPrice } from './cart.js';
+import { PRODUCT, findSize, findFinish } from './product-data.js';
 
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ui = initUI({ prefersReducedMotion });
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-let ctx;
-let has3DError = false;
+function ready(fn) {
+  if (document.readyState !== 'loading') fn();
+  else document.addEventListener('DOMContentLoaded', fn);
+}
 
-function init3D() {
-  if (ctx || has3DError) return;
+function boot() {
+  initLoader();
+  initNav();
+  initHeroVideo();
+  initScrollReveals();
+  initShowcaseTilt();
+  initShop();
+  initCart();
+  initCheckout();
+  initNewsletter();
+}
 
-  const canvas = document.getElementById('bg-canvas');
-  if (!canvas) {
-    has3DError = true;
-    return;
+// ---------------------------------------------------------------------------
+// Loader
+// ---------------------------------------------------------------------------
+
+function initLoader() {
+  const loader = document.getElementById('loader');
+  const fill = document.getElementById('loader-fill');
+  if (!loader) return;
+  let p = 0;
+  const tick = setInterval(() => {
+    p = Math.min(94, p + Math.random() * 22);
+    if (fill) fill.style.width = p + '%';
+  }, 110);
+  const finish = () => {
+    clearInterval(tick);
+    if (fill) fill.style.width = '100%';
+    setTimeout(() => loader.classList.add('hidden'), 250);
+  };
+  // Finish once the hero video can play, or after a short cap either way.
+  const video = document.getElementById('hero-video');
+  let done = false;
+  const safeFinish = () => { if (!done) { done = true; finish(); } };
+  if (video) {
+    video.addEventListener('canplay', safeFinish, { once: true });
+    video.addEventListener('error', safeFinish, { once: true });
   }
+  setTimeout(safeFinish, 2200);
+}
 
-  try {
-    ctx = initScene(canvas, { prefersReducedMotion });
-  } catch (err) {
-    has3DError = true;
-    console.error('3D init failed:', err);
-    document.getElementById('loader')?.classList.add('hidden');
-    showWebGLWarning();
-    return;
+// ---------------------------------------------------------------------------
+// Nav: transparent -> solid on scroll, mobile menu
+// ---------------------------------------------------------------------------
+
+function initNav() {
+  const nav = document.getElementById('nav');
+  const toggle = document.getElementById('nav-toggle');
+  const menu = document.getElementById('mobile-menu');
+
+  function onScroll() {
+    if (window.scrollY > window.innerHeight * 0.72) nav.classList.add('solid');
+    else nav.classList.remove('solid');
   }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
-  const {
-    scene, camera, renderer, controls, bottle, parts, explodeOffsets,
-    materials, particles, crystals, platform, lights, packaging, contactShadow
-  } = ctx;
+  if (toggle && menu) {
+    toggle.addEventListener('click', () => {
+      const open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.classList.toggle('open', open);
+    });
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => {
+      menu.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.classList.remove('open');
+    }));
+  }
+}
 
-  let showcaseMode = false;
-  let exploded = false;
-  let capOpen = false;
-  const clock = new THREE.Clock();
+// ---------------------------------------------------------------------------
+// Hero video: graceful fallback if autoplay/video fails
+// ---------------------------------------------------------------------------
 
-  const liquidSurface = bottle.getObjectByName('liquidSurface');
+function initHeroVideo() {
+  const video = document.getElementById('hero-video');
+  const fallback = document.getElementById('hero-fallback');
+  if (!video) return;
 
-  ctx.onShowcaseToggle = (active) => {
-    if (active === showcaseMode) return;
-    showcaseMode = active;
-    controls.enabled = active;
-    ctx.userInteractingBottle = active;
-    canvas.classList.toggle('interactive', active);
-    if (active) {
-      controls.target.set(0, 1.35, 0);
-    }
+  const showFallback = () => {
+    console.warn('[AURA] Hero video unavailable — using the poster image instead.');
+    video.style.display = 'none';
+    if (fallback) fallback.hidden = false;
   };
 
-  const story = createScrollStory(ctx);
+  video.addEventListener('error', showFallback);
 
-  document.querySelectorAll('.swatch').forEach(sw => {
-    sw.addEventListener('click', () => {
-      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-      sw.classList.add('active');
-      materials.steelMat.color.set(sw.dataset.color);
+  // Some mobile browsers block autoplay even when muted+inline; if play()
+  // is rejected, fall back to the static poster rather than a stalled video.
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch(() => {
+      // Retry once on first user interaction (common mobile requirement).
+      const retry = () => {
+        video.play().catch(showFallback);
+        window.removeEventListener('touchstart', retry);
+        window.removeEventListener('click', retry);
+      };
+      window.addEventListener('touchstart', retry, { once: true, passive: true });
+      window.addEventListener('click', retry, { once: true });
     });
-  });
+  }
+}
 
-  const btnExplode = document.getElementById('btn-explode');
-  const btnCap = document.getElementById('btn-cap');
-  const btnReset = document.getElementById('btn-reset');
+// ---------------------------------------------------------------------------
+// Scroll reveals (fade/scale in as sections enter view)
+// ---------------------------------------------------------------------------
 
-  btnExplode?.addEventListener('click', () => {
-    exploded = !exploded;
-    btnExplode.textContent = exploded ? 'Reassemble' : 'Exploded View';
-  });
-  btnCap?.addEventListener('click', () => {
-    capOpen = !capOpen;
-    btnCap.textContent = capOpen ? 'Close Cap' : 'Open Cap';
-  });
-  btnReset?.addEventListener('click', () => {
-    exploded = false;
-    capOpen = false;
-    btnExplode.textContent = 'Exploded View';
-    btnCap.textContent = 'Open Cap';
-    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-    document.querySelector('.swatch[data-color="#e8ecef"]')?.classList.add('active');
-    materials.steelMat.color.set('#e8ecef');
-    controls.reset();
-    controls.target.set(0, 1.35, 0);
-  });
+function initScrollReveals() {
+  const targets = document.querySelectorAll('.reveal-in, .details-grid .detail-card, .feature-row, .philosophy-inner');
+  if (!targets.length) return;
 
-  const capPart = parts.find(p => p.name === 'bottleCap');
-  const capRest = capPart.userData.restPos.clone();
-
-  function updateExplode() {
-    parts.forEach(part => {
-      const rest = part.userData.restPos;
-      const offset = explodeOffsets[part.name] || new THREE.Vector3();
-      const targetLocal = exploded ? rest.clone().add(offset) : rest.clone();
-      if (part.name === 'bottleCap') return;
-      part.position.lerp(targetLocal, 0.08);
-    });
-    let capTarget = capRest.clone();
-    if (capOpen) capTarget.y += 0.9;
-    if (exploded) capTarget = capRest.clone().add(explodeOffsets.bottleCap);
-    capPart.position.lerp(capTarget, 0.09);
-    capPart.rotation.y += ((capOpen ? Math.PI * 0.4 : 0) - capPart.rotation.y) * 0.09;
+  if (reducedMotion || !('IntersectionObserver' in window)) {
+    targets.forEach((t) => t.classList.add('in-view'));
+    return;
   }
 
-  let mouseX = 0;
-  let mouseY = 0;
-  let smoothMouseX = 0;
-  let smoothMouseY = 0;
-
-  window.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-    mouseY = (e.clientY / window.innerHeight) * 2 - 1;
-  }, { passive: true });
-
-  const posAttr = particles.geometry.attributes.position;
-  const base = particles.userData.basePositions;
-  let frameCount = 0;
-  let envRevealed = false;
-
-  function animate() {
-    if (has3DError) return;
-
-    const t = clock.elapsedTime;
-    smoothMouseX += (mouseX - smoothMouseX) * 0.04;
-    smoothMouseY += (mouseY - smoothMouseY) * 0.04;
-
-    const storyState = story.update() || {};
-    updateExplode();
-
-    const introDone = ctx.introComplete;
-    const phase = storyState.phase || 'anticipation';
-    const pastReveal = ['discover', 'showcase', 'experience', 'desire', 'action'].includes(phase);
-
-    if (introDone && pastReveal && !envRevealed) {
-      envRevealed = true;
-      platform.visible = true;
-      if (contactShadow) contactShadow.visible = true;
-      crystals.visible = true;
-      particles.visible = true;
-    }
-
-    if (showcaseMode) {
-      controls.update();
-    } else if (introDone && !prefersReducedMotion && !ctx.detailFocus) {
-      const tilt = ctx.discoveryActive ? 0.018 : 0.008;
-      bottle.rotation.x += (smoothMouseY * tilt - bottle.rotation.x) * 0.03;
-      bottle.rotation.z += (-smoothMouseX * tilt * 0.4 - bottle.rotation.z) * 0.03;
-    }
-
-    if (lights.revealLight && introDone) {
-      lights.revealLight.position.x += (smoothMouseX * 0.8 - lights.revealLight.position.x) * 0.03;
-      lights.revealLight.position.z += ((3.2 + smoothMouseY * 0.3) - lights.revealLight.position.z) * 0.03;
-    }
-
-    if (liquidSurface && introDone && !prefersReducedMotion) {
-      const baseY = liquidSurface.userData.baseY;
-      liquidSurface.position.y = baseY + Math.sin(t * 0.6) * 0.004;
-      liquidSurface.rotation.z = Math.sin(t * 0.4) * 0.008;
-    }
-
-    const ring = bottle.getObjectByName('bottleRing');
-    if (ring && introDone && !prefersReducedMotion) {
-      ring.material.emissiveIntensity = 0.22 + Math.sin(t * 0.8) * 0.08;
-    }
-
-    if (introDone && pastReveal && !prefersReducedMotion && frameCount % 4 === 0) {
-      particles.rotation.y += 0.0002;
-      for (let i = 0; i < posAttr.count; i++) {
-        posAttr.array[i * 3 + 1] = base[i * 3 + 1] + Math.sin(t * 0.4 + i) * 0.03;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+        io.unobserve(entry.target);
       }
-      posAttr.needsUpdate = true;
-    }
+    });
+  }, { threshold: 0.2 });
 
-    if (introDone && !prefersReducedMotion && frameCount % 5 === 0) {
-      if (lights.blueRim) lights.blueRim.intensity += (3.0 + Math.sin(t * 0.35) * 0.25 - lights.blueRim.intensity) * 0.04;
-      if (lights.purpleRim) lights.purpleRim.intensity += (2.2 + Math.cos(t * 0.3) * 0.2 - lights.purpleRim.intensity) * 0.04;
-    }
+  targets.forEach((t) => io.observe(t));
+}
 
-    renderer.render(scene, camera);
-    frameCount++;
+// ---------------------------------------------------------------------------
+// Showcase: pseudo-3D tilt + moving sheen + detail pins
+// (Single studio photo — this is an honest bounded tilt/lighting effect,
+// not a fake 360° rotation.)
+// ---------------------------------------------------------------------------
+
+function initShowcaseTilt() {
+  const stage = document.getElementById('showcase-stage');
+  const tilt = document.getElementById('showcase-tilt');
+  const sheen = document.getElementById('showcase-sheen');
+  if (!stage || !tilt) return;
+
+  if (!reducedMotion && !window.matchMedia('(hover: none)').matches) {
+    let raf = null;
+    function onMove(e) {
+      const rect = stage.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;  // 0..1
+      const y = (e.clientY - rect.top) / rect.height;  // 0..1
+      const rx = (0.5 - y) * 12;
+      const ry = (x - 0.5) * 16;
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        tilt.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+        if (sheen) sheen.style.background =
+          `radial-gradient(circle at ${x * 100}% ${y * 100}%, rgba(255,255,255,0.16), transparent 45%)`;
+      });
+    }
+    function onLeave() {
+      tilt.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      if (sheen) sheen.style.background = 'transparent';
+    }
+    stage.addEventListener('mousemove', onMove);
+    stage.addEventListener('mouseleave', onLeave);
   }
 
-  if (renderer.setAnimationLoop) {
-    renderer.setAnimationLoop(animate);
+  // Detail pins
+  const caption = document.getElementById('pin-caption');
+  document.querySelectorAll('.pin').forEach((pin) => {
+    const show = () => {
+      if (!caption) return;
+      caption.textContent = pin.getAttribute('data-caption');
+      caption.hidden = false;
+      pin.classList.add('active');
+    };
+    const hide = () => {
+      if (!caption) return;
+      caption.hidden = true;
+      pin.classList.remove('active');
+    };
+    pin.addEventListener('mouseenter', show);
+    pin.addEventListener('focus', show);
+    pin.addEventListener('mouseleave', hide);
+    pin.addEventListener('blur', hide);
+    pin.addEventListener('click', (e) => { e.preventDefault(); show(); });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Shop: size / finish / quantity selection
+// ---------------------------------------------------------------------------
+
+let selectedSize = PRODUCT.sizes[0].id;
+let selectedFinish = PRODUCT.finishes[0].id;
+let selectedQty = 1;
+
+function initShop() {
+  const sizeRow = document.getElementById('size-options');
+  const finishRow = document.getElementById('finish-options');
+  const priceEl = document.getElementById('shop-price');
+  const qtyEl = document.getElementById('qty-value');
+  const shopImg = document.getElementById('shop-img');
+  const showcaseImg = document.getElementById('showcase-img');
+
+  function updatePrice() {
+    const size = findSize(selectedSize);
+    if (priceEl) priceEl.textContent = formatPrice(size.price);
+  }
+
+  function updateFinishVisual() {
+    const finish = findFinish(selectedFinish);
+    const filterValue = finish.filter === 'none' ? '' : finish.filter;
+    // Apply a subtle overall tint so the swatch choice is visible on the
+    // single studio photo without fabricating extra product photography.
+    if (shopImg) shopImg.style.filter = filterValue;
+    if (showcaseImg) showcaseImg.style.filter = filterValue;
+  }
+
+  if (sizeRow) {
+    sizeRow.querySelectorAll('.option-pill').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        sizeRow.querySelectorAll('.option-pill').forEach((b) => {
+          b.classList.remove('active');
+          b.setAttribute('aria-checked', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-checked', 'true');
+        selectedSize = btn.getAttribute('data-size');
+        updatePrice();
+      });
+    });
+  }
+
+  if (finishRow) {
+    finishRow.querySelectorAll('.finish-swatch').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        finishRow.querySelectorAll('.finish-swatch').forEach((b) => {
+          b.classList.remove('active');
+          b.setAttribute('aria-checked', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-checked', 'true');
+        selectedFinish = btn.getAttribute('data-finish');
+        updateFinishVisual();
+      });
+    });
+  }
+
+  const minus = document.getElementById('qty-minus');
+  const plus = document.getElementById('qty-plus');
+  if (minus) minus.addEventListener('click', () => {
+    selectedQty = Math.max(1, selectedQty - 1);
+    if (qtyEl) qtyEl.textContent = String(selectedQty);
+  });
+  if (plus) plus.addEventListener('click', () => {
+    selectedQty = Math.min(9, selectedQty + 1);
+    if (qtyEl) qtyEl.textContent = String(selectedQty);
+  });
+
+  const addBtn = document.getElementById('add-to-cart');
+  if (addBtn) addBtn.addEventListener('click', () => {
+    addToCart(selectedSize, selectedFinish, selectedQty);
+    addBtn.classList.add('pressed');
+    setTimeout(() => addBtn.classList.remove('pressed'), 220);
+    showToast('Added to bag');
+    selectedQty = 1;
+    if (qtyEl) qtyEl.textContent = '1';
+    openCart();
+  });
+
+  updatePrice();
+  updateFinishVisual();
+}
+
+// ---------------------------------------------------------------------------
+// Cart drawer
+// ---------------------------------------------------------------------------
+
+function openCart() {
+  toggleDrawer('cart-drawer', true);
+}
+function closeCart() {
+  toggleDrawer('cart-drawer', false);
+}
+
+function toggleDrawer(id, open) {
+  const drawer = document.getElementById(id);
+  const overlay = document.getElementById('drawer-overlay');
+  if (!drawer) return;
+  drawer.classList.toggle('open', open);
+  drawer.setAttribute('aria-hidden', String(!open));
+  if (overlay) overlay.classList.toggle('open', open);
+  document.body.classList.toggle('drawer-locked', open);
+}
+
+function renderCart(state) {
+  const linesEl = document.getElementById('cart-lines');
+  const emptyEl = document.getElementById('cart-empty');
+  const footEl = document.getElementById('cart-foot');
+  const subtotalEl = document.getElementById('cart-subtotal-amt');
+  const countEl = document.getElementById('bag-count');
+
+  if (!linesEl) return;
+
+  if (state.lines.length === 0) {
+    linesEl.innerHTML = '';
+    if (emptyEl) emptyEl.hidden = false;
+    if (footEl) footEl.hidden = true;
   } else {
-    function fallbackLoop() {
-      animate();
-      requestAnimationFrame(fallbackLoop);
-    }
-    fallbackLoop();
+    if (emptyEl) emptyEl.hidden = true;
+    if (footEl) footEl.hidden = false;
+    linesEl.innerHTML = state.lines.map((line) => `
+      <div class="cart-line" data-key="${line.key}">
+        <img src="${PRODUCT.image}" alt="" class="cart-line-img" />
+        <div class="cart-line-info">
+          <span class="cart-line-name">${PRODUCT.name}</span>
+          <span class="cart-line-variant">${line.size.label} &middot; ${line.finish.label}</span>
+          <div class="cart-line-qty">
+            <button class="qty-btn small" data-action="dec" aria-label="Decrease quantity">–</button>
+            <span>${line.qty}</span>
+            <button class="qty-btn small" data-action="inc" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+        <div class="cart-line-right">
+          <span class="cart-line-price">${formatPrice(line.lineTotal)}</span>
+          <button class="cart-line-remove" data-action="remove" aria-label="Remove item">Remove</button>
+        </div>
+      </div>
+    `).join('');
   }
 
-  ui.onLoaderReady?.();
-  ctx.prefersReducedMotion = prefersReducedMotion;
-  runIntroSequence(ctx, () => ui.onIntroComplete?.());
+  if (subtotalEl) subtotalEl.textContent = formatPrice(state.subtotal);
+  if (countEl) {
+    if (state.count > 0) {
+      countEl.textContent = String(state.count);
+      countEl.hidden = false;
+    } else {
+      countEl.hidden = true;
+    }
+  }
 }
 
-function showWebGLWarning() {
-  const warning = document.createElement('div');
-  warning.className = 'webgl-warning';
-  warning.setAttribute('role', 'alert');
-  warning.textContent = '3D features require WebGL. Please enable hardware acceleration in your browser settings.';
-  document.body.appendChild(warning);
+function initCart() {
+  const bagToggle = document.getElementById('bag-toggle');
+  const closeBtn = document.getElementById('cart-close');
+  const overlay = document.getElementById('drawer-overlay');
+  const linesEl = document.getElementById('cart-lines');
+
+  if (bagToggle) bagToggle.addEventListener('click', openCart);
+  if (closeBtn) closeBtn.addEventListener('click', closeCart);
+  if (overlay) overlay.addEventListener('click', () => {
+    closeCart();
+    toggleDrawer('checkout-drawer', false);
+  });
+
+  if (linesEl) {
+    linesEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const lineEl = btn.closest('.cart-line');
+      const key = lineEl && lineEl.getAttribute('data-key');
+      if (!key) return;
+      const state = getState();
+      const line = state.lines.find((l) => l.key === key);
+      if (!line) return;
+      if (btn.dataset.action === 'inc') updateQty(key, line.qty + 1);
+      if (btn.dataset.action === 'dec') updateQty(key, line.qty - 1);
+      if (btn.dataset.action === 'remove') removeFromCart(key);
+    });
+  }
+
+  onCartChange(renderCart);
+  renderCart(getState());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeCart();
+      toggleDrawer('checkout-drawer', false);
+    }
+  });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init3D);
-} else {
-  init3D();
+// ---------------------------------------------------------------------------
+// Checkout (client-side demo — no backend exists to send this to)
+// ---------------------------------------------------------------------------
+
+function initCheckout() {
+  const openBtn = document.getElementById('checkout-open');
+  const closeBtn = document.getElementById('checkout-close');
+  const form = document.getElementById('checkout-form');
+  const success = document.getElementById('checkout-success');
+  const summary = document.getElementById('checkout-summary');
+  const doneBtn = document.getElementById('checkout-done');
+  const orderNumberEl = document.getElementById('order-number');
+
+  if (openBtn) openBtn.addEventListener('click', () => {
+    const state = getState();
+    if (summary) {
+      summary.innerHTML = state.lines.map((l) =>
+        `<div class="checkout-summary-line"><span>${l.size.label} &middot; ${l.finish.label} &times; ${l.qty}</span><span>${formatPrice(l.lineTotal)}</span></div>`
+      ).join('') + `<div class="checkout-summary-line total"><span>Total</span><span>${formatPrice(state.subtotal)}</span></div>`;
+    }
+    toggleDrawer('cart-drawer', false);
+    toggleDrawer('checkout-drawer', true);
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', () => toggleDrawer('checkout-drawer', false));
+
+  if (form) form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const orderNumber = 'AURA-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    if (orderNumberEl) orderNumberEl.textContent = orderNumber;
+    form.hidden = true;
+    if (success) success.hidden = false;
+    clearCart();
+  });
+
+  if (doneBtn) doneBtn.addEventListener('click', () => {
+    toggleDrawer('checkout-drawer', false);
+    setTimeout(() => {
+      if (form) { form.hidden = false; form.reset(); }
+      if (success) success.hidden = true;
+    }, 300);
+  });
 }
 
-window.addEventListener('load', () => {
-  if (!ctx && !has3DError) init3D();
-});
+// ---------------------------------------------------------------------------
+// Newsletter (client-side only — no backend to send this to)
+// ---------------------------------------------------------------------------
+
+function initNewsletter() {
+  const form = document.getElementById('newsletter-form');
+  if (!form) return;
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = form.querySelector('input[type="email"]');
+    if (!input || !input.checkValidity()) return;
+    input.value = '';
+    showToast('Subscribed');
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Toast
+// ---------------------------------------------------------------------------
+
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.hidden = false;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => { toast.hidden = true; }, 250);
+  }, 1800);
+}
+
+ready(boot);

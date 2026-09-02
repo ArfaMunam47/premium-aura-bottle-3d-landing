@@ -8,13 +8,15 @@ export default defineConfig({
     open: true,
     host: true
   },
+  preview: {
+    port: 4173,
+    open: true,
+    host: true
+  },
   build: {
     outDir: '../dist',
-    emptyOutDir: true
-  },
-  resolve: {
-    alias: {
-      'three': 'three'
-    }
+    emptyOutDir: true,
+    target: ['es2020', 'firefox115', 'chrome110'],
+    assetsInlineLimit: 0
   }
 });
